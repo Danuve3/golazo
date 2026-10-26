@@ -4,6 +4,6 @@
 // permite las operaciones que define supabase/schema.sql.
 // Si los dejas vacíos, el juego funciona igual pero sin ranking ni nombres.
 window.GOLAZO_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://ckskqpcrxiviqawqriyj.supabase.co',
+  supabaseAnonKey: 'sb_publishable_8UOBYKxmhV3WBl0Fuh3AhA_DVyJ9lsw'
 };
