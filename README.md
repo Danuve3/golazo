@@ -11,6 +11,17 @@ Todo el juego es un único `index.html` sin dependencias ni paso de compilación
 
 Tienes 3 balones. Cada gol seguido sube el multiplicador hasta x10.
 
+## App instalable
+
+Golazo es una PWA: se instala en el móvil y se abre a pantalla completa, sin barra del navegador, con su icono y pantalla de arranque.
+
+- **Android (Chrome):** botón **INSTALAR APP** en la pantalla de inicio, o menú ⋮ → *Instalar aplicación*.
+- **iPhone (Safari):** el botón **INSTALAR APP** explica los pasos: Compartir → *Añadir a pantalla de inicio*.
+
+Una vez abierta funciona sin conexión (el ranking necesita red, pero las partidas pendientes se envían después). Mantiene la pantalla encendida mientras juegas, silencia el sonido al salir de la app y tiene un atajo a **Ranking** al mantener pulsado el icono en Android.
+
+`sw.js` pide la página y `config.js` primero a la red, así que cada cambio que subas llega solo a los jugadores sin tocar versiones. Si cambias iconos o imágenes, sube el número de `SHELL_CACHE` en `sw.js` para que se refresquen.
+
 ## Ranking público
 
 Al entrar, el juego pide un nombre de jugador. El nombre es único (sin distinguir mayúsculas) y queda guardado en el dispositivo junto a un token secreto, así que nadie más puede jugar con tu nombre. También se puede jugar como invitado, pero esas puntuaciones no entran en el ranking. Si un invitado hace una buena partida, puede crear su nombre al terminar y guardarla.

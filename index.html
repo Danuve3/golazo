@@ -13,7 +13,23 @@
 <meta property="og:title" content="Golazo Infinito">
 <meta property="og:description" content="Arcade de tiros libres infinitos. ¿Hasta dónde llega tu racha?">
 <meta property="og:type" content="website">
+<meta name="apple-mobile-web-app-title" content="Golazo">
+<meta name="application-name" content="Golazo">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/splash-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash/splash-750x1334.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Silkscreen:wght@400;700&display=swap">
@@ -32,7 +48,9 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behavior:none;font-family:var(--f-disp);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 #stage{position:fixed;inset:0;display:flex;justify-content:center;background:var(--night)}
 #wrap{position:relative;width:100%;max-width:min(100vw,62vh);height:100%;overflow:hidden;touch-action:none;background:var(--ink)}
@@ -164,6 +182,16 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 #bList li.me{background:rgba(124,240,200,.18);box-shadow:inset 3px 0 0 var(--mint)}
 .bstate{padding:24px 14px;font-family:var(--f-num);font-size:12px;line-height:1.5}
 .bme{font-family:var(--f-num);font-size:12px;letter-spacing:.04em;background:rgba(124,240,200,.16);padding:6px 10px}
+.chip.mint{background:var(--mint);color:var(--ink)}
+#iosSheet{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(5,4,15,.6);z-index:20;cursor:default}
+#iosSheet .sheet{background:var(--ink);box-shadow:0 -4px 0 var(--plum);padding:22px max(20px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;flex-direction:column;gap:16px;animation:sheetIn .28s steps(7)}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+#iosSheet h2{margin:0;font-family:var(--f-disp);font-weight:700;font-size:26px;color:var(--gold);text-shadow:3px 3px 0 var(--coral)}
+#iosSheet ol{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+#iosSheet li{display:flex;gap:12px;align-items:center;font-family:var(--f-num);font-size:13px;line-height:1.4;letter-spacing:.03em}
+#iosSheet li b{flex:none;width:24px;height:24px;display:grid;place-items:center;background:var(--plum);color:var(--gold);box-shadow:2px 2px 0 rgba(0,0,0,.4)}
+#iosSheet svg{width:18px;height:18px;vertical-align:-3px;margin-inline:2px;fill:none;stroke:var(--mint);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#iosSheet .btn{align-self:center}
 </style>
 <script src="config.js"></script>
 </head>
@@ -224,6 +252,7 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
       <div class="trow">
         <button class="chip" id="tPlayer" type="button" hidden>INVITADO</button>
         <button class="chip gold" id="tBoard" type="button" hidden>RANKING</button>
+        <button class="chip mint" id="tInstall" type="button" hidden>INSTALAR APP</button>
       </div>
     </div>
     <div id="over" class="screen" hidden>
@@ -251,6 +280,17 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
       <button id="guestBtn" class="link" type="button">JUGAR COMO INVITADO</button>
       <div class="small warn" id="guestWarn">Como invitado puedes jugar, pero tus récords no se guardan en el ranking público</div>
       <button id="nameBack" class="link" type="button" hidden>VOLVER</button>
+    </div>
+    <div id="iosSheet" hidden role="dialog" aria-labelledby="iosTitle">
+      <div class="sheet">
+        <h2 id="iosTitle">Instala Golazo</h2>
+        <ol>
+          <li><b>1</b><span>Toca <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 12v8h14v-8"/></svg> Compartir en la barra de Safari</span></li>
+          <li><b>2</b><span>Elige «Añadir a pantalla de inicio»</span></li>
+          <li><b>3</b><span>Pulsa «Añadir» y abre Golazo desde tu pantalla de inicio</span></li>
+        </ol>
+        <button class="btn sm" id="iosOk" type="button">ENTENDIDO</button>
+      </div>
     </div>
     <div id="board" class="screen form" hidden role="dialog" aria-labelledby="bTitle">
       <div class="ttl" id="bTitle">RANKING</div>
@@ -1028,7 +1068,7 @@ function onAimStart() {
   }
 }
 function startGame() {
-  audioInit(); sWhistle();
+  audioInit(); sWhistle(); keepAwake(true);
   adivinoSide = Math.random() < 0.5 ? -1 : 1;
   K.type = null;
   score = 0; lives = 3; streak = 0; goals = 0; bestStreak = 0; shots = 0;
@@ -1118,6 +1158,7 @@ function gameOver() {
   lastGame = { score, goals, streak: bestStreak, at: Date.now(), status: 'idle', sent: false };
   updateHUD();
   submitLast();
+  keepAwake(false);
 }
 
 /* ---------------- HUD ---------------- */
@@ -2086,10 +2127,47 @@ $('bClose').addEventListener('click', e => { e.stopPropagation(); showScreen(boa
 $('tBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('title'); });
 $('oBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('over'); });
 
+/* ---------------- app shell: install, offline, native feel ---------------- */
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let installPrompt = null, wakeLock = null, wantAwake = false;
+async function keepAwake(on) {
+  wantAwake = on;
+  try {
+    if (on && !wakeLock && 'wakeLock' in navigator && !document.hidden) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+  } catch (e) { wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (au.c && au.c.state === 'running') au.c.suspend(); }
+  else { if (au.c && au.c.state === 'suspended') au.c.resume(); if (wantAwake) keepAwake(true); last = performance.now(); }
+});
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; if (!STANDALONE) $('tInstall').hidden = false; });
+window.addEventListener('appinstalled', () => { installPrompt = null; $('tInstall').hidden = true; });
+if (!STANDALONE && IOS) $('tInstall').hidden = false;
+$('tInstall').addEventListener('click', async e => {
+  e.stopPropagation();
+  if (installPrompt) {
+    installPrompt.prompt();
+    try { const r = await installPrompt.userChoice; if (r.outcome === 'accepted') $('tInstall').hidden = true; } catch (err) { }
+    installPrompt = null;
+  } else if (IOS) $('iosSheet').hidden = false;
+});
+$('iosOk').addEventListener('click', e => { e.stopPropagation(); $('iosSheet').hidden = true; });
+$('iosSheet').addEventListener('click', e => { e.stopPropagation(); if (e.target === $('iosSheet')) $('iosSheet').hidden = true; });
+$('iosSheet').addEventListener('pointerdown', e => e.stopPropagation());
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { }); });
+}
+
 boot({});
 syncPlayerUI();
+const params = new URLSearchParams(location.search);
 if (NET.enabled && !player) openName('title');
-else flushPending();
+else { flushPending(); if (params.has('ranking') && NET.enabled) openBoard('title'); }
+if (params.has('ranking') || params.has('source')) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
 if (DEBUG) Object.assign(window.__golazo,  { setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; } });
 })();
