@@ -139,7 +139,13 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 #replay span{display:flex;align-items:center;gap:8px;font-family:var(--f-num);font-size:13px;letter-spacing:.12em;background:var(--ink);padding:4px 10px;box-shadow:3px 3px 0 rgba(0,0,0,.5)}
 #replay i{width:9px;height:9px;border-radius:50%;background:var(--coral);animation:blink .8s steps(2) infinite}
 #replay small{font-size:10px;opacity:.65;letter-spacing:.06em}
-#replayTap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);text-align:center;font-family:var(--f-num);font-size:11px;letter-spacing:.06em;opacity:.7;pointer-events:none}
+#replayTap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 64px);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;font-family:var(--f-num);font-size:11px;letter-spacing:.06em;pointer-events:none}
+#replayTap span{opacity:.7}
+#rShare{pointer-events:auto}
+#rShare[aria-pressed="true"]{background:var(--mint);color:var(--ink)}
+.clipbox{position:relative;width:min(58vw,280px,calc((100vh - 300px) * 9 / 16));aspect-ratio:9/16;background:var(--ink);box-shadow:0 0 0 3px var(--plum),6px 6px 0 var(--ink);flex:none;display:grid;place-items:center}
+.clipbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--night)}
+.clipbox .bstate{position:relative}
 @media (prefers-reduced-motion:reduce){#hint,.tap,#rec{animation:none}}
 .screen.form{cursor:default;touch-action:auto;overflow-y:auto;background:linear-gradient(to bottom,rgba(5,4,15,.93),rgba(5,4,15,.88) 60%,rgba(5,4,15,.95));justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
 .logo.sm .a{font-size:clamp(44px,14vw,66px)}
@@ -218,7 +224,10 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
     <button id="mute" type="button" aria-label="Sonido">SON</button>
     <button id="modeBtn" type="button" aria-label="Cambiar modo de disparo">DESLIZAR</button>
     <div id="replay" hidden><span><i></i>REPETICIÓN <small id="rcam"></small></span></div>
-    <div id="replayTap" class="hs" hidden>TOCA PARA SALTAR</div>
+    <div id="replayTap" class="hs" hidden>
+      <button class="chip gold" id="rShare" type="button" aria-pressed="false" hidden>COMPARTIR JUGADA</button>
+      <span>TOCA PARA SALTAR</span>
+    </div>
     <div id="contact" hidden>
       <div id="cpow">POTENCIA<b><i id="cpowbar"></i></b></div>
       <div id="cwrap">
@@ -268,6 +277,7 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
         <button class="btn" id="again" type="button">OTRA VEZ</button>
         <button class="chip gold" id="oBoard" type="button" hidden>RANKING</button>
       </div>
+      <button class="chip mint" id="oClip" type="button" hidden>COMPARTIR MI MEJOR GOL</button>
     </div>
     <div id="nameScr" class="screen form" hidden>
       <div class="logo sm"><span class="a">GOLAZO</span><span class="z">INFINITO</span></div>
@@ -280,6 +290,18 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
       <button id="guestBtn" class="link" type="button">JUGAR COMO INVITADO</button>
       <div class="small warn" id="guestWarn">Como invitado puedes jugar, pero tus récords no se guardan en el ranking público</div>
       <button id="nameBack" class="link" type="button" hidden>VOLVER</button>
+    </div>
+    <div id="sharePanel" class="screen form" hidden role="dialog" aria-labelledby="clipTitle">
+      <div class="ttl" id="clipTitle">TU JUGADA</div>
+      <div class="clipbox">
+        <video id="clipVideo" playsinline muted loop autoplay hidden></video>
+        <div id="clipWait" class="bstate">Preparando vídeo…</div>
+      </div>
+      <div class="brow">
+        <button class="btn sm" id="clipShare" type="button" disabled>COMPARTIR</button>
+        <button class="chip" id="clipSave" type="button" disabled>DESCARGAR</button>
+      </div>
+      <button class="link" id="clipClose" type="button">SEGUIR JUGANDO</button>
     </div>
     <div id="iosSheet" hidden role="dialog" aria-labelledby="iosTitle">
       <div class="sheet">
@@ -1071,6 +1093,7 @@ function startGame() {
   audioInit(); sWhistle(); keepAwake(true);
   adivinoSide = Math.random() < 0.5 ? -1 : 1;
   K.type = null;
+  clipReset();
   score = 0; lives = 3; streak = 0; goals = 0; bestStreak = 0; shots = 0;
   $('title').hidden = true; $('over').hidden = true;
   newKick(true);
@@ -1103,6 +1126,7 @@ function finishGoal() {
   const subs = bon.map(b => b[0]);
   subs.push('+' + total.toLocaleString('es-ES') + (mult > 1 ? '  (x' + mult + ')' : ''));
   showMsg(main, subs, 'goal');
+  lastShot = { goal: true, main, bonus: bon.map(b => b[0]), total, mult, dist: Math.round(f.dist) };
   celebrate = 3; flash = 0.35; shake = Math.max(shake, 0.5);
   sRoar(); buzz([30, 40, 60]);
   confetti();
@@ -1119,6 +1143,7 @@ let gainBall = false;
 function finishFail(label) {
   const f = flight; if (f.outcome) return; f.outcome = 'miss';
   lives--; streak = 0;
+  lastShot = { goal: false, main: label, bonus: [], total: 0, mult: 1, dist: Math.round(f.dist || 0) };
   showMsg(label, lives > 0 ? [lives === 1 ? 'ÚLTIMO BALÓN' : lives + ' BALONES'] : ['SIN BALONES'], 'fail');
   sOoh(); buzz(60);
   state = 'result'; resultT = 0;
@@ -1156,6 +1181,7 @@ function gameOver() {
   $('over').hidden = false;
   $('oBoard').hidden = !NET.enabled;
   lastGame = { score, goals, streak: bestStreak, at: Date.now(), status: 'idle', sent: false };
+  $('oClip').hidden = !bestClip;
   updateHUD();
   submitLast();
   keepAwake(false);
@@ -1751,13 +1777,18 @@ function startReplay() {
   rp.len = dur / rp.speed + 0.5;
   state = 'replay'; particles.length = 0; trail.length = 0;
   $('rcam').textContent = RP_CAMS[m]; $('replay').hidden = false; $('replayTap').hidden = false;
+  clipStart(lastShot);
   if (m === 'red') { cam.x = clamp(rp.end.bx * 0.35, -2.2, 2.2); cam.z = -5.3; cam.y = 1.45; }
   if (m === 'lateral') { cam.x = -rp.side * 17; cam.z = 7; cam.y = 2.3; }
 }
-function endReplay() {
+function endReplay(skipped) {
   $('replay').hidden = true; $('replayTap').hidden = true; rp = null;
-  if (lives <= 0) gameOver(); else newKick(false);
+  const want = CLIP.want;
+  clipFinish(skipped && !want);
+  if (want) { state = 'share'; openSharePanel(null, 'play'); return; }
+  continueAfterReplay();
 }
+function continueAfterReplay() { if (lives <= 0) gameOver(); else newKick(false); }
 function updReplay(dt) {
   rp.t += dt;
   const f = clamp(rp.t * 60 * rp.speed, 0, rec.length - 1), i0 = Math.floor(f), i1 = Math.min(rec.length - 1, i0 + 1), a = f - i0;
@@ -1782,7 +1813,7 @@ function updReplay(dt) {
     const yaw = Math.atan2(ball.x - cam.x, -(ball.z - cam.z));
     let d = yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * (rp.t < 0.05 ? 1 : e);
   }
-  if (rp.t >= rp.len) endReplay();
+  if (rp.t >= rp.len) endReplay(false);
 }
 function updCelebrations(dt) {
   cel.scarves = Math.max(0, cel.scarves - dt); cel.wave = Math.max(0, cel.wave - dt);
@@ -1878,6 +1909,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
   update(dt); render();
+  if (CLIP.active) clipDraw(now);
 }
 
 /* ---------------- input ---------------- */
@@ -1889,7 +1921,7 @@ wrap.addEventListener('pointerdown', e => {
   if (e.target.closest('button') || e.target.closest('.screen')) return;
   audioInit();
   if (state === 'result') { skipReq = true; return; }
-  if (state === 'replay') { endReplay(); return; }
+  if (state === 'replay') { endReplay(true); return; }
   if (state !== 'aim' || pending || e.target.closest('#contact')) return;
   try { wrap.setPointerCapture(e.pointerId); } catch (_) { }
   if (mode === 'sling') { const p = cpt(e); sling = { id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y }; e.preventDefault(); return; }
@@ -2162,6 +2194,150 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { }); });
 }
 
+/* ---------------- shareable replays ---------------- */
+let lastShot = null, bestClip = null, shareClip = null, shareFrom = 'play';
+const SHARE_URL = location.protocol === 'file:' ? 'https://danuve3.github.io/golazo/' : location.origin + location.pathname.replace(/index\.html$/, '');
+const CLIP_MIME = (() => {
+  if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) return '';
+  for (const m of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) {
+    try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) { }
+  }
+  return '';
+})();
+const CLIP = { active: false, ending: false, endAt: 0, want: false, discard: false, rec: null, chunks: [], cv: null, g: null, snap: null, meta: null, onReady: null, last: 0 };
+const VW = 720, VH = 1280;
+function clipReset() {
+  if (bestClip && bestClip !== shareClip) URL.revokeObjectURL(bestClip.url);
+  bestClip = null;
+}
+function clipStart(meta) {
+  CLIP.want = false; CLIP.discard = false;
+  const btn = $('rShare'); btn.hidden = !CLIP_MIME; btn.textContent = 'COMPARTIR JUGADA'; btn.setAttribute('aria-pressed', 'false');
+  if (!CLIP_MIME) return;
+  try {
+    if (!CLIP.cv) {
+      CLIP.cv = document.createElement('canvas'); CLIP.cv.width = VW; CLIP.cv.height = VH; CLIP.g = CLIP.cv.getContext('2d');
+      CLIP.snap = document.createElement('canvas');
+    }
+    CLIP.meta = Object.assign({ player: isPlayer() ? player.name : '' }, meta || {});
+    CLIP.chunks = []; CLIP.ending = false; CLIP.last = 0;
+    clipDraw(performance.now());
+    const stream = CLIP.cv.captureStream(30);
+    const rec = new MediaRecorder(stream, { mimeType: CLIP_MIME, videoBitsPerSecond: 2500000 });
+    rec.ondataavailable = e => { if (e.data && e.data.size) CLIP.chunks.push(e.data); };
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      if (CLIP.discard || !CLIP.chunks.length) { CLIP.chunks = []; if (CLIP.onReady) { const f = CLIP.onReady; CLIP.onReady = null; f(null); } return; }
+      const blob = new Blob(CLIP.chunks, { type: CLIP_MIME.split(';')[0] }); CLIP.chunks = [];
+      const clip = { blob, url: URL.createObjectURL(blob), mime: CLIP_MIME.split(';')[0], meta: CLIP.meta };
+      let kept = false;
+      if (clip.meta.goal && (!bestClip || clip.meta.total > bestClip.meta.total)) { if (bestClip && bestClip !== shareClip) URL.revokeObjectURL(bestClip.url); bestClip = clip; kept = true;  if (state === 'over') $('oClip').hidden = false; }
+      if (CLIP.onReady) { const f = CLIP.onReady; CLIP.onReady = null; f(clip); kept = true; }
+      if (!kept) URL.revokeObjectURL(clip.url);
+    };
+    rec.start(200);
+    CLIP.rec = rec; CLIP.active = true;
+  } catch (e) { CLIP.active = false; CLIP.rec = null; $('rShare').hidden = true; }
+}
+function clipFinish(discard) {
+  if (!CLIP.active || !CLIP.rec) return;
+  CLIP.discard = !!discard;
+  if (discard) { CLIP.active = false; try { CLIP.rec.stop(); } catch (e) { } return; }
+  // freeze the last replay frame and add a short end card before stopping
+  CLIP.snap.width = cv.width; CLIP.snap.height = cv.height; CLIP.snap.getContext('2d').drawImage(cv, 0, 0);
+  CLIP.ending = true; CLIP.endAt = performance.now() + 1300;
+}
+function clipText(g, txt, x, y, size, color, shadow, font, align) {
+  g.font = (font || '700 ') + size + 'px ' + (font && font.includes('Silk') ? '' : '"Pixelify Sans", "Silkscreen", monospace');
+  g.textAlign = align || 'center'; g.textBaseline = 'alphabetic';
+  if (shadow) { g.fillStyle = '#0c0a20'; g.fillText(txt, x + size * 0.1, y + size * 0.1); g.fillStyle = shadow; g.fillText(txt, x + size * 0.05, y + size * 0.05); }
+  g.fillStyle = color; g.fillText(txt, x, y);
+}
+function wrapLines(g, txt, maxW) {
+  const words = txt.split(' '), lines = []; let line = '';
+  for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line); return lines;
+}
+function clipDraw(now) {
+  if (CLIP.active && now - CLIP.last < 30) return;   // ~30 fps is plenty for the video
+  CLIP.last = now;
+  const g = CLIP.g, src = CLIP.ending ? CLIP.snap : cv, m = CLIP.meta || {};
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#05040f'; g.fillRect(0, 0, VW, VH);
+  const sc = Math.ceil(Math.max(VW / src.width, VH / src.height)), dw = src.width * sc, dh = src.height * sc;
+  g.drawImage(src, Math.round((VW - dw) / 2), Math.round((VH - dh) / 2), dw, dh);
+  // top band: the game's name
+  g.fillStyle = 'rgba(12,10,32,.92)'; g.fillRect(0, 0, VW, 150);
+  clipText(g, 'GOLAZO', VW / 2, 92, 70, '#ffc84a', '#ff6650');
+  g.font = '700 22px "Silkscreen", monospace'; g.textAlign = 'center'; g.fillStyle = '#f7edd3'; g.fillText('I N F I N I T O', VW / 2, 128);
+  g.fillStyle = '#ff6650'; g.fillRect(28, 30, 14, 14); g.font = '18px "Silkscreen", monospace'; g.textAlign = 'left'; g.fillStyle = '#f7edd3'; g.fillText('REPETICIÓN', 50, 44);
+  // bottom band: what happened
+  const bh = 300; g.fillStyle = 'rgba(12,10,32,.92)'; g.fillRect(0, VH - bh, VW, bh);
+  clipText(g, m.main || '', VW / 2, VH - bh + 92, 76, m.goal ? '#ffc84a' : '#f7edd3', m.goal ? '#ff6650' : '#3a2768');
+  g.font = '24px "Silkscreen", monospace'; g.textAlign = 'center'; g.fillStyle = '#f7edd3';
+  const info = (m.bonus && m.bonus.length ? m.bonus.join(' · ') : (m.goal ? 'DESDE ' + m.dist + ' METROS' : ''));
+  wrapLines(g, info, VW - 80).slice(0, 2).forEach((ln, i) => g.fillText(ln, VW / 2, VH - bh + 140 + i * 32));
+  if (m.goal && m.total) { g.font = '700 34px "Silkscreen", monospace'; g.fillStyle = '#ffc84a'; g.fillText('+' + fmt(m.total) + (m.mult > 1 ? '  x' + m.mult : ''), VW / 2, VH - bh + 222); }
+  g.font = '20px "Silkscreen", monospace'; g.fillStyle = '#7cf0c8';
+  if (m.player) { g.textAlign = 'left'; g.fillText(m.player.toUpperCase(), 32, VH - 28); g.textAlign = 'right'; g.fillText(SHARE_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), VW - 32, VH - 28); }
+  else { g.textAlign = 'center'; g.fillText(SHARE_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), VW / 2, VH - 28); }
+  // end card
+  if (CLIP.ending) {
+    const k = clamp(1 - (CLIP.endAt - now) / 1300, 0, 1);
+    g.fillStyle = 'rgba(5,4,15,' + (0.72 * Math.min(1, k * 3)).toFixed(2) + ')'; g.fillRect(0, 150, VW, VH - 150 - bh);
+    if (k > 0.15) { clipText(g, '¿LO SUPERAS?', VW / 2, VH / 2 - 10, 64, '#f7edd3', '#3a2768'); g.font = '24px "Silkscreen", monospace'; g.textAlign = 'center'; g.fillStyle = '#7cf0c8'; g.fillText('JUEGA GRATIS EN EL MÓVIL', VW / 2, VH / 2 + 44); }
+    if (now >= CLIP.endAt && CLIP.rec) { CLIP.active = false; CLIP.ending = false; try { CLIP.rec.stop(); } catch (e) { } }
+  }
+}
+$('rShare').addEventListener('click', e => {
+  e.stopPropagation();
+  if (!CLIP.active) return;
+  CLIP.want = true; const b = $('rShare'); b.setAttribute('aria-pressed', 'true'); b.textContent = 'SE PREPARA AL ACABAR';
+});
+function openSharePanel(clip, from) {
+  shareFrom = from; shareClip = clip;
+  const v = $('clipVideo'), wait = $('clipWait');
+  $('clipShare').disabled = $('clipSave').disabled = true;
+  v.hidden = true; wait.hidden = false; wait.textContent = 'Preparando vídeo…';
+  $('clipClose').textContent = from === 'over' ? 'VOLVER' : 'SEGUIR JUGANDO';
+  $('sharePanel').hidden = false;
+  const show = c => {
+    if (!c) { wait.textContent = 'No se pudo crear el vídeo en este dispositivo.'; return; }
+    shareClip = c; v.src = c.url; v.hidden = false; wait.hidden = true;
+    v.play().catch(() => { });
+    $('clipShare').disabled = $('clipSave').disabled = false;
+    $('clipShare').hidden = !(navigator.canShare && navigator.canShare({ files: [clipFile(c)] }));
+  };
+  if (clip) show(clip); else CLIP.onReady = show;
+}
+function clipFile(c) {
+  const ext = c.mime.includes('mp4') ? 'mp4' : 'webm';
+  return new File([c.blob], 'golazo-' + new Date().toISOString().slice(0, 10) + '.' + ext, { type: c.mime });
+}
+function closeSharePanel() {
+  const v = $('clipVideo'); v.pause(); v.removeAttribute('src'); v.load();
+  $('sharePanel').hidden = true;
+  if (shareClip && shareClip !== bestClip) URL.revokeObjectURL(shareClip.url);
+  shareClip = null; CLIP.onReady = null;
+  if (shareFrom === 'play') continueAfterReplay();
+}
+$('clipShare').addEventListener('click', async e => {
+  e.stopPropagation(); if (!shareClip) return;
+  const m = shareClip.meta, file = clipFile(shareClip);
+  const what = m.goal ? (m.bonus.length ? m.bonus.join(', ').toLowerCase() : 'golazo desde ' + m.dist + ' metros') : m.main.toLowerCase();
+  const text = (m.goal ? '¡Mira este gol en Golazo Infinito! (' + what + ') ¿Lo superas?' : '¡Mira esta jugada en Golazo Infinito!') + ' ' + SHARE_URL;
+  try { await navigator.share({ files: [file], title: 'Golazo Infinito', text }); }
+  catch (err) { if (err && err.name !== 'AbortError') saveClip(); }
+});
+function saveClip() {
+  if (!shareClip) return;
+  const a = document.createElement('a'); a.href = shareClip.url; a.download = clipFile(shareClip).name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$('clipSave').addEventListener('click', e => { e.stopPropagation(); saveClip(); });
+$('clipClose').addEventListener('click', e => { e.stopPropagation(); closeSharePanel(); });
+$('oClip').addEventListener('click', e => { e.stopPropagation(); if (bestClip) openSharePanel(bestClip, 'over'); });
+
 boot({});
 syncPlayerUI();
 const params = new URLSearchParams(location.search);
@@ -2169,7 +2345,7 @@ if (NET.enabled && !player) openName('title');
 else { flushPending(); if (params.has('ranking') && NET.enabled) openBoard('title'); }
 if (params.has('ranking') || params.has('source')) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
-if (DEBUG) Object.assign(window.__golazo,  { setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; } });
+if (DEBUG) Object.defineProperties(window.__golazo, Object.getOwnPropertyDescriptors({ setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; }, over: () => { lives = 0; gameOver(); } }));
 })();
 </script>
 </body>
