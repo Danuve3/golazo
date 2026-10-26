@@ -1,0 +1,2098 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05040f">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Golazo Infinito</title>
+<meta name="description" content="Tiros libres infinitos con física real de balón: rosca, potencia, viento, barrera y un portero que mejora con cada gol. Compite en el ranking público.">
+<meta property="og:title" content="Golazo Infinito">
+<meta property="og:description" content="Arcade de tiros libres infinitos. ¿Hasta dónde llega tu racha?">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Silkscreen:wght@400;700&display=swap">
+<style>
+:root{
+  /* Layout: one portrait arcade screen. Pixel canvas fills it, HUD floats inside the safe areas. Night match under floodlights. */
+  --ink:#0c0a20;
+  --night:#05040f;
+  --cream:#f7edd3;
+  --gold:#ffc84a;
+  --coral:#ff6650;
+  --mint:#7cf0c8;
+  --plum:#3a2768;
+  --f-disp:"Pixelify Sans","Silkscreen",ui-monospace,Menlo,monospace;
+  --f-num:"Silkscreen","Pixelify Sans",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behavior:none;font-family:var(--f-disp);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;display:flex;justify-content:center;background:var(--night)}
+#wrap{position:relative;width:100%;max-width:min(100vw,62vh);height:100%;overflow:hidden;touch-action:none;background:var(--ink)}
+#cv{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);image-rendering:pixelated;image-rendering:crisp-edges}
+.hs{text-shadow:2px 2px 0 var(--ink),-1px -1px 0 var(--ink),1px -1px 0 var(--ink),-1px 1px 0 var(--ink),2px 0 0 var(--ink)}
+#hud{position:absolute;inset:0;pointer-events:none;padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:4px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.col{display:flex;flex-direction:column;gap:4px}
+.col.r{align-items:flex-end}
+#score{font-family:var(--f-num);font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+#mult{align-self:flex-start;font-family:var(--f-num);font-size:13px;padding:2px 7px 3px;background:var(--gold);color:var(--ink);box-shadow:2px 2px 0 var(--ink);transform-origin:left center}
+#mult.off{background:transparent;color:var(--cream);opacity:.55;box-shadow:none;padding-left:0}
+#mult.bump{animation:bump .35s steps(4)}
+@keyframes bump{0%{transform:scale(1.6)}100%{transform:scale(1)}}
+#balls{display:flex;gap:6px}
+.b{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--ink) 0 22%,transparent 23%),radial-gradient(circle at 15% 85%,var(--ink) 0 14%,transparent 15%),radial-gradient(circle at 88% 78%,var(--ink) 0 14%,transparent 15%),radial-gradient(circle at 70% 10%,var(--ink) 0 13%,transparent 14%),var(--cream);box-shadow:0 0 0 2px var(--ink),2px 3px 0 2px var(--ink);transition:opacity .2s}
+.b.lost{opacity:.18}
+.b.gain{animation:bump .4s steps(4)}
+#best{font-family:var(--f-num);font-size:11px;letter-spacing:.06em;opacity:.8}
+#info{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-num);font-size:12px;letter-spacing:.06em}
+#dist{background:rgba(12,10,32,.55);padding:2px 6px}
+#kname{background:rgba(12,10,32,.55);padding:2px 6px;border-left:6px solid var(--gold)}
+#wind{display:flex;align-items:center;gap:6px;background:rgba(12,10,32,.55);padding:2px 6px}
+#wind[hidden]{display:none!important}
+#warr{width:12px;height:12px;display:inline-block}
+#warr i{display:block;width:12px;height:12px;background:var(--mint);clip-path:polygon(50% 0,100% 55%,65% 55%,65% 100%,35% 100%,35% 55%,0 55%)}
+#msg{position:absolute;left:0;right:0;top:27%;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;text-align:center;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+#msgMain{font-family:var(--f-disp);font-weight:700;font-size:clamp(40px,13vw,64px);line-height:.95;letter-spacing:.02em;color:var(--gold);opacity:0;text-wrap:balance}
+#msgMain.goal{color:var(--gold);text-shadow:3px 3px 0 var(--coral),6px 6px 0 var(--ink)}
+#msgMain.fail{color:var(--cream);text-shadow:3px 3px 0 var(--plum),6px 6px 0 var(--ink)}
+#msgMain.info{color:var(--mint);font-size:clamp(28px,9vw,42px);text-shadow:3px 3px 0 var(--plum),5px 5px 0 var(--ink)}
+#msgMain.show{animation:pop 1.5s steps(24) forwards}
+@keyframes pop{0%{opacity:0;transform:scale(2.2) rotate(-6deg)}10%{opacity:1;transform:scale(.92) rotate(2deg)}16%{transform:scale(1.05) rotate(-1deg)}22%{transform:scale(1) rotate(0)}82%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1) translateY(-14px)}}
+#msgSub{display:flex;flex-direction:column;gap:3px;align-items:center;font-family:var(--f-num);font-size:13px;letter-spacing:.05em}
+#msgSub span{opacity:0;background:var(--ink);padding:2px 8px;color:var(--cream)}
+#msgSub span.pts{color:var(--gold);font-size:18px}
+#msgSub span.show{animation:sub 1.5s steps(20) forwards}
+@keyframes sub{0%{opacity:0;transform:translateY(8px)}12%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
+#hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 62px);text-align:center;font-family:var(--f-num);font-size:12px;line-height:1.6;letter-spacing:.05em;pointer-events:none;padding-inline:max(16px,env(safe-area-inset-left,0px));animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.45}}
+#mute{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:38px;height:38px;border:0;background:rgba(12,10,32,.6);color:var(--cream);font-family:var(--f-num);font-size:11px;cursor:pointer;box-shadow:inset 0 0 0 2px rgba(247,237,211,.25)}
+#mute:focus-visible,.btn:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:linear-gradient(to bottom,rgba(5,4,15,.15),rgba(5,4,15,.72) 45%,rgba(5,4,15,.85));padding-inline:max(16px,env(safe-area-inset-left,0px));padding-block:calc(env(safe-area-inset-top,0px) + 20px) calc(env(safe-area-inset-bottom,0px) + 20px);cursor:pointer}
+.logo{display:flex;flex-direction:column;align-items:center;line-height:.82}
+.logo .a{font-family:var(--f-disp);font-weight:700;font-size:clamp(58px,19vw,92px);color:var(--gold);text-shadow:4px 4px 0 var(--coral),8px 8px 0 var(--ink);letter-spacing:.01em;transform:rotate(-4deg)}
+.logo .z{font-family:var(--f-num);font-weight:700;font-size:clamp(20px,6.4vw,30px);color:var(--cream);letter-spacing:.32em;margin-top:14px;padding-left:.32em;text-shadow:3px 3px 0 var(--plum)}
+.how{display:grid;gap:8px;font-family:var(--f-num);font-size:12px;letter-spacing:.04em;line-height:1.35;max-width:30ch}
+.how div{display:flex;gap:10px;align-items:center;text-align:left}
+.how b{flex:none;width:22px;height:22px;display:grid;place-items:center;background:var(--plum);color:var(--gold);font-weight:700;box-shadow:2px 2px 0 var(--ink)}
+.tap{font-family:var(--f-disp);font-weight:700;font-size:22px;color:var(--mint);animation:blink 1s steps(2) infinite}
+.small{font-family:var(--f-num);font-size:11px;opacity:.7;letter-spacing:.06em}
+.big{font-family:var(--f-num);font-weight:700;font-size:clamp(48px,15vw,72px);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;text-shadow:4px 4px 0 var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(3,auto);gap:4px 20px;font-family:var(--f-num)}
+.stats .k{font-size:10px;opacity:.7;letter-spacing:.08em}
+.stats .v{font-size:20px;font-variant-numeric:tabular-nums}
+.ttl{font-family:var(--f-disp);font-weight:700;font-size:clamp(34px,11vw,52px);color:var(--cream);text-shadow:3px 3px 0 var(--plum),6px 6px 0 var(--ink)}
+#rec{font-family:var(--f-disp);font-weight:700;font-size:20px;color:var(--ink);background:var(--mint);padding:2px 10px;box-shadow:3px 3px 0 var(--ink);animation:blink .8s steps(2) infinite}
+.btn{font-family:var(--f-disp);font-weight:700;font-size:24px;color:var(--ink);background:var(--gold);border:0;padding:10px 26px 12px;box-shadow:4px 4px 0 var(--coral),8px 8px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--coral),4px 4px 0 var(--ink)}
+.modes{display:flex;box-shadow:3px 3px 0 var(--ink)}
+.modes button{font-family:var(--f-num);font-size:12px;letter-spacing:.05em;padding:9px 12px;border:0;background:var(--plum);color:var(--cream);cursor:pointer}
+.modes button[aria-checked="true"]{background:var(--mint);color:var(--ink)}
+.modes button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#modeBtn{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);height:38px;padding:0 10px;border:0;background:rgba(12,10,32,.6);color:var(--cream);font-family:var(--f-num);font-size:11px;letter-spacing:.05em;cursor:pointer;box-shadow:inset 0 0 0 2px rgba(247,237,211,.25)}
+#modeBtn:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+#contact{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:14px;padding-inline:max(16px,env(safe-area-inset-left,0px));padding-bottom:calc(env(safe-area-inset-bottom,0px) + 22px);background:linear-gradient(to top,rgba(5,4,15,.92),rgba(5,4,15,.6) 50%,rgba(5,4,15,0) 72%)}
+#cpow{font-family:var(--f-num);font-size:13px;letter-spacing:.06em}
+#cpow b{display:inline-block;vertical-align:middle;width:90px;height:10px;margin-left:8px;background:rgba(247,237,211,.18);box-shadow:2px 2px 0 var(--ink);position:relative}
+#cpow i{position:absolute;left:0;top:0;bottom:0;background:var(--gold)}
+#cwrap{position:relative;width:min(52vw,220px);aspect-ratio:1;margin:34px 64px 38px}
+#cball{position:absolute;inset:0;border-radius:50%;cursor:crosshair;touch-action:none;
+  background:radial-gradient(circle at 50% 50%,var(--ink) 0 15%,transparent 15.5%),radial-gradient(circle at 50% 4%,var(--ink) 0 11%,transparent 11.5%),radial-gradient(circle at 92% 38%,var(--ink) 0 11%,transparent 11.5%),radial-gradient(circle at 8% 38%,var(--ink) 0 11%,transparent 11.5%),radial-gradient(circle at 76% 90%,var(--ink) 0 11%,transparent 11.5%),radial-gradient(circle at 24% 90%,var(--ink) 0 11%,transparent 11.5%),radial-gradient(circle at 34% 28%,#fffdf6 0,#e9e6dc 38%,#a9a6c2 78%,#6f6c94 100%);
+  box-shadow:0 0 0 4px var(--ink),7px 9px 0 4px var(--ink)}
+#cball::before,#cball::after{content:"";position:absolute;background:repeating-linear-gradient(90deg,var(--coral) 0 6px,transparent 6px 11px);opacity:.75;pointer-events:none}
+#cball::before{left:6%;right:6%;top:50%;height:2px;margin-top:-1px}
+#cball::after{top:6%;bottom:6%;left:50%;width:2px;margin-left:-1px;background:repeating-linear-gradient(180deg,var(--coral) 0 6px,transparent 6px 11px)}
+#cmark{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px var(--ink);pointer-events:none}
+.cl{position:absolute;font-family:var(--f-num);font-size:11px;letter-spacing:.05em;line-height:1.2;text-align:center;pointer-events:none;color:var(--cream)}
+.cl.t{left:50%;bottom:100%;transform:translate(-50%,-8px)}
+.cl.b{left:50%;top:100%;transform:translate(-50%,14px)}
+.cl.l{right:100%;top:50%;transform:translate(-8px,-50%);width:58px}
+.cl.r{left:100%;top:50%;transform:translate(12px,-50%);width:58px}
+#cback{font-family:var(--f-num);font-size:12px;letter-spacing:.06em;border:0;background:transparent;color:var(--cream);opacity:.8;padding:8px 14px;cursor:pointer;margin-top:6px}
+#cback:focus-visible{outline:2px solid var(--mint)}
+#replay{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 11%);display:flex;justify-content:center;pointer-events:none}
+#replay span{display:flex;align-items:center;gap:8px;font-family:var(--f-num);font-size:13px;letter-spacing:.12em;background:var(--ink);padding:4px 10px;box-shadow:3px 3px 0 rgba(0,0,0,.5)}
+#replay i{width:9px;height:9px;border-radius:50%;background:var(--coral);animation:blink .8s steps(2) infinite}
+#replay small{font-size:10px;opacity:.65;letter-spacing:.06em}
+#replayTap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);text-align:center;font-family:var(--f-num);font-size:11px;letter-spacing:.06em;opacity:.7;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#hint,.tap,#rec{animation:none}}
+.screen.form{cursor:default;touch-action:auto;overflow-y:auto;background:linear-gradient(to bottom,rgba(5,4,15,.93),rgba(5,4,15,.88) 60%,rgba(5,4,15,.95));justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
+.logo.sm .a{font-size:clamp(44px,14vw,66px)}
+.logo.sm .z{font-size:clamp(15px,4.8vw,22px);margin-top:10px}
+.namebox{display:flex;flex-direction:column;align-items:center;gap:12px;width:min(100%,320px);margin-top:8px}
+.namebox label{font-family:var(--f-num);font-size:13px;letter-spacing:.08em}
+#nameInput{width:100%;box-sizing:border-box;font-family:var(--f-disp);font-weight:700;font-size:24px;text-align:center;color:var(--cream);background:var(--ink);border:0;border-radius:0;box-shadow:inset 0 0 0 3px var(--plum),4px 4px 0 var(--ink);padding:10px 12px;-webkit-user-select:text;user-select:text;outline:none}
+#nameInput:focus{box-shadow:inset 0 0 0 3px var(--mint),4px 4px 0 var(--ink)}
+#nameInput::placeholder{color:rgba(247,237,211,.35)}
+.nmsg{font-family:var(--f-num);font-size:11px;letter-spacing:.04em;min-height:2.7em;line-height:1.3;opacity:.85;max-width:30ch}
+.nmsg.ok{color:var(--mint);opacity:1}
+.nmsg.bad{color:var(--coral);opacity:1}
+.btn:disabled{opacity:.55;cursor:default}
+.link{font-family:var(--f-num);font-size:13px;letter-spacing:.06em;color:var(--cream);background:transparent;border:0;padding:10px 14px;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.warn{max-width:30ch;line-height:1.45;margin-top:-12px}
+.trow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chip{font-family:var(--f-num);font-size:12px;letter-spacing:.05em;padding:8px 12px;border:0;background:var(--plum);color:var(--cream);box-shadow:3px 3px 0 var(--ink);cursor:pointer}
+.chip.gold{background:var(--gold);color:var(--ink)}
+.chip.static,.chip:disabled{cursor:default;opacity:1;background:rgba(58,39,104,.7);color:var(--cream)}
+.chip:focus-visible,.link:focus-visible,.tabs button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.btn.sm{font-size:18px;padding:8px 18px 10px;box-shadow:3px 3px 0 var(--coral),6px 6px 0 var(--ink)}
+.brow{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center}
+.onet{font-family:var(--f-num);font-size:12px;letter-spacing:.04em;line-height:1.5;max-width:32ch;display:flex;flex-direction:column;align-items:center;gap:10px;min-height:1.5em}
+.onet b{color:var(--gold);font-weight:700}
+.onet.bad{color:var(--coral)}
+.tabs{display:flex;box-shadow:3px 3px 0 var(--ink)}
+.tabs button{font-family:var(--f-num);font-size:12px;letter-spacing:.06em;padding:9px 16px;border:0;background:var(--plum);color:var(--cream);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--mint);color:var(--ink)}
+.blist{width:min(100%,380px);max-height:56vh;overflow-y:auto;background:rgba(12,10,32,.82);box-shadow:inset 0 0 0 2px rgba(247,237,211,.12);flex:none}
+#bList{list-style:none;margin:0;padding:4px 0}
+#bList li{display:grid;grid-template-columns:2.8em minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:7px 12px;font-family:var(--f-num);font-size:13px;text-align:left}
+#bList li:nth-child(even){background:rgba(247,237,211,.045)}
+#bList .r{color:rgba(247,237,211,.6);font-variant-numeric:tabular-nums}
+#bList .n{font-family:var(--f-disp);font-weight:700;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bList .g{font-size:10px;opacity:.55;letter-spacing:.04em}
+#bList .s{font-variant-numeric:tabular-nums;color:var(--gold)}
+#bList li.p1 .r{color:var(--gold)}
+#bList li.p2 .r{color:var(--cream)}
+#bList li.p3 .r{color:var(--coral)}
+#bList li.me{background:rgba(124,240,200,.18);box-shadow:inset 3px 0 0 var(--mint)}
+.bstate{padding:24px 14px;font-family:var(--f-num);font-size:12px;line-height:1.5}
+.bme{font-family:var(--f-num);font-size:12px;letter-spacing:.04em;background:rgba(124,240,200,.16);padding:6px 10px}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div id="stage">
+  <div id="wrap">
+    <canvas id="cv" aria-label="Campo de fútbol: tiro libre"></canvas>
+    <div id="hud">
+      <div class="row">
+        <div class="col">
+          <div id="score" class="hs">0</div>
+          <div id="mult" class="off">RACHA 0</div>
+        </div>
+        <div class="col r">
+          <div id="balls"><i class="b"></i><i class="b"></i><i class="b"></i></div>
+          <div id="best" class="hs">MEJOR 0</div>
+        </div>
+      </div>
+      <div id="info" class="hs"><span id="dist">24 M</span><span id="kname">EL GATO</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
+    </div>
+    <div id="msg"><div id="msgMain"></div><div id="msgSub"></div></div>
+    <div id="hint" class="hs" hidden>DESLIZA HACIA LA PORTERÍA<br>CURVA EL GESTO PARA DAR ROSCA</div>
+    <button id="mute" type="button" aria-label="Sonido">SON</button>
+    <button id="modeBtn" type="button" aria-label="Cambiar modo de disparo">DESLIZAR</button>
+    <div id="replay" hidden><span><i></i>REPETICIÓN <small id="rcam"></small></span></div>
+    <div id="replayTap" class="hs" hidden>TOCA PARA SALTAR</div>
+    <div id="contact" hidden>
+      <div id="cpow">POTENCIA<b><i id="cpowbar"></i></b></div>
+      <div id="cwrap">
+        <div id="cball" role="button" aria-label="Toca el balón para golpearlo"></div>
+        <i id="cmark" hidden></i>
+        <span class="cl t">ARRIBA<br>RASO Y CAE</span>
+        <span class="cl b">ABAJO<br>ELEVA</span>
+        <span class="cl l">ROSCA A LA DERECHA</span>
+        <span class="cl r">ROSCA A LA IZQUIERDA</span>
+      </div>
+      <button id="cback" type="button">VOLVER A APUNTAR</button>
+    </div>
+    <div id="title" class="screen">
+      <div class="logo"><span class="a">GOLAZO</span><span class="z">INFINITO</span></div>
+      <div class="modes" role="radiogroup" aria-label="Modo de disparo">
+        <button type="button" role="radio" data-mode="swipe" aria-checked="true">DESLIZAR</button>
+        <button type="button" role="radio" data-mode="sling" aria-checked="false">TIRACHINAS</button>
+      </div>
+      <div class="how" id="howSwipe">
+        <div><b>1</b><span>Desliza el dedo desde el balón hacia donde quieras chutar</span></div>
+        <div><b>2</b><span>Más rápido, más potencia. Más largo, más alto</span></div>
+        <div><b>3</b><span>Dibuja una curva y el balón tomará rosca</span></div>
+      </div>
+      <div class="how" id="howSling" hidden>
+        <div><b>1</b><span>Arrastra hacia atrás: la dirección apunta, la distancia da potencia</span></div>
+        <div><b>2</b><span>Suelta y toca el balón donde quieras golpearlo</span></div>
+        <div><b>3</b><span>De lado da rosca. Abajo lo elevas, arriba sale raso y cae</span></div>
+      </div>
+      <div class="tap">TOCA PARA JUGAR</div>
+      <div class="small" id="tbest">RÉCORD 0</div>
+      <div class="trow">
+        <button class="chip" id="tPlayer" type="button" hidden>INVITADO</button>
+        <button class="chip gold" id="tBoard" type="button" hidden>RANKING</button>
+      </div>
+    </div>
+    <div id="over" class="screen" hidden>
+      <div class="ttl">FIN DEL PARTIDO</div>
+      <div id="rec" hidden>¡NUEVO RÉCORD!</div>
+      <div class="big" id="oScore">0</div>
+      <div class="stats">
+        <span class="k">GOLES</span><span class="k">RACHA</span><span class="k">RÉCORD</span>
+        <span class="v" id="oGoals">0</span><span class="v" id="oStreak">0</span><span class="v" id="oBest">0</span>
+      </div>
+      <div class="onet" id="oNet" aria-live="polite"></div>
+      <div class="brow">
+        <button class="btn" id="again" type="button">OTRA VEZ</button>
+        <button class="chip gold" id="oBoard" type="button" hidden>RANKING</button>
+      </div>
+    </div>
+    <div id="nameScr" class="screen form" hidden>
+      <div class="logo sm"><span class="a">GOLAZO</span><span class="z">INFINITO</span></div>
+      <form id="nameForm" class="namebox" novalidate>
+        <label for="nameInput">ELIGE TU NOMBRE DE JUGADOR</label>
+        <input id="nameInput" name="name" type="text" autocomplete="nickname" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="16" placeholder="Tu nombre" enterkeyhint="go">
+        <div id="nameMsg" class="nmsg" aria-live="polite">De 3 a 16 caracteres: letras, números y _ . -</div>
+        <button class="btn" id="nameGo" type="submit">ENTRAR</button>
+      </form>
+      <button id="guestBtn" class="link" type="button">JUGAR COMO INVITADO</button>
+      <div class="small warn" id="guestWarn">Como invitado puedes jugar, pero tus récords no se guardan en el ranking público</div>
+      <button id="nameBack" class="link" type="button" hidden>VOLVER</button>
+    </div>
+    <div id="board" class="screen form" hidden role="dialog" aria-labelledby="bTitle">
+      <div class="ttl" id="bTitle">RANKING</div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-p="week" aria-selected="true">SEMANA</button>
+        <button type="button" role="tab" data-p="all" aria-selected="false">SIEMPRE</button>
+      </div>
+      <div class="blist"><ol id="bList"></ol><div id="bState" class="bstate">Cargando…</div></div>
+      <div id="bMe" class="bme" hidden></div>
+      <button class="btn sm" id="bClose" type="button">CERRAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const wrap = $('wrap'), cv = $('cv'), ctx = cv.getContext('2d', { alpha: false });
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
+const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.2831853 * v); };
+const hash = (a, b) => { let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+const PK = c => ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0;
+const DEBUG = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
+
+/* ---------------- physics constants (SI units) ---------------- */
+const G = 9.81, R = 0.11, RHO = 1.2, AREA = Math.PI * R * R, MASS = 0.43;
+const KM = 0.0047;                 // Magnus: 0.5·ρ·A·r / m  (lift coefficient ≈ spin parameter)
+const GOAL_HW = 3.66, GOAL_H = 2.44, POST_R = 0.06, NET_D = 2.0;
+const STEP = 1 / 240;
+
+/* ---------------- state ---------------- */
+const ball = { x: 0, y: R, z: 24, vx: 0, vy: 0, vz: 0, wx: 0, wy: 0, wz: 0, m: [1, 0, 0, 0, 1, 0, 0, 0, 1], held: false, kn: null, t: 0, live: false };
+const wind = { x: 0, z: 0 };
+const cam = { x: 0, y: 1.75, z: 27, yaw: 0 };
+const camBase = { x: 0, y: 1.75, z: 27, yaw: 0 };
+const camFrom = { x: 0, y: 1.75, z: 27, yaw: 0 };
+let transT = 0;
+const K = { x: 0, y: 1, z: 0.45, vx: 0, vy: 0, th: 0, thT: 0, thRate: 0, mode: 'ready', pose: 0, low: 0, tx: 0, push: 0, vxT: 0, vyT: 0, setX: 0, setY: 0, jumped: false, decided: false, gambleAt: -1, p: { tau: .4, vmax: 3.3, vy: 3.2, err: 1, catchV: 11 } };
+let wall = [];
+let target = null;
+let spot = { x: 0, z: 24 };
+let state = 'title';
+let score = 0, lives = 3, streak = 0, goals = 0, bestStreak = 0, best = 0, shots = 0;
+let flight = null;
+let resultT = 0, realT = 0, simT = 0;
+let timeScale = 1, slowT = 0, stopT = 0, shake = 0, flash = 0, celebrate = 0, kickFlash = 0;
+const particles = [], trail = [];
+let swipe = null, swipeFade = [];
+const net = { amp: 0, vel: 0, x: 0, y: 1 };
+let kick = { kind: 'falta', P: null, dir: null, started: false };
+const kickPos = { x: 0, z: 24 };
+let rec = [], recOn = false, recCnt = 0, rp = null;
+const cel = { flares: 0, fireworks: 0, scarves: 0, wave: 0, waveStart: 0, fwNext: 0, flareSrc: [] };
+
+try { best = +localStorage.getItem('golazo-best') || 0; } catch (e) { }
+
+/* ---------------- screen ---------------- */
+let W = 192, H = 400, F = 420, cx = 96, hz = 150, img, buf;
+let colT, colU, bBot, bTop, sTop, cAng;
+let fx = 0, fz = -1, rxv = 1, rzv = 0;
+function resize() {
+  const r = wrap.getBoundingClientRect();
+  W = 192;
+  H = clamp(Math.round(W * (r.height + 12) / Math.max(1, r.width + 12)), 250, 520);
+  cv.width = W; cv.height = H;
+  F = Math.min(W * 1.95, H * 0.92);
+  cx = W / 2; hz = Math.round(H * 0.37);
+  img = ctx.createImageData(W, H); buf = new Uint32Array(img.data.buffer);
+  colT = new Float32Array(W); colU = new Float32Array(W); bBot = new Float32Array(W); bTop = new Float32Array(W); sTop = new Float32Array(W); cAng = new Float32Array(W);
+}
+window.addEventListener('resize', resize);
+
+/* ---------------- palette ---------------- */
+const C = {
+  skyTop: [9, 8, 30], skyHor: [58, 36, 96], glow: [255, 226, 170],
+  grassA: [44, 118, 60], grassB: [55, 136, 69], grassOut: [30, 88, 50], haze: [44, 40, 82], line: [234, 240, 226], dirt: [112, 104, 60],
+  stand: [24, 21, 48], rim: [14, 12, 32], board: [18, 16, 30], boardDim: [30, 26, 50],
+  ink: [12, 10, 28], white: [248, 246, 236], post: [240, 240, 232], postShade: [170, 170, 190], netc: [214, 220, 240],
+  kJersey: [255, 196, 64], kShorts: [34, 28, 66], kGlove: [124, 240, 200], hair: [38, 26, 22],
+  wJersey: [214, 66, 70], wShorts: [240, 236, 224], gold: [255, 200, 74], mint: [124, 240, 200], coral: [255, 102, 80], cream: [247, 237, 211]
+};
+const SKINS = [[236, 196, 156], [204, 150, 108], [140, 96, 64], [96, 64, 44]];
+const CROWD = [[214, 77, 77], [244, 196, 82], [240, 232, 214], [84, 132, 214], [130, 96, 196], [70, 176, 128], [255, 140, 70]];
+const LEDC = [C.gold, C.mint, C.coral, C.cream];
+const INK = PK(C.ink);
+
+/* tiny 3x5 LED font */
+const GLYPH = {
+  A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111', F: '111100110100100',
+  G: '011100101101011', I: '111010010010111', L: '100100100100111', N: '110101101101101', O: '010101101101010', P: '110101110100100',
+  R: '110101110101101', S: '011100010001110', T: '111010010010010', U: '101101101101111', Z: '111001010100111', 2: '110001010100111',
+  6: '011100110101010', '·': '000000010000000', ' ': '000000000000000'
+};
+const BOARD_TXT = ' GOLAZO INFINITO · TIRO LIBRE · ROSCA · ARCADE CUP 26 ·';
+const BOARD_BITS = [], BOARD_COL = [];
+{
+  let w = 0;
+  for (const ch of BOARD_TXT) { BOARD_BITS.push(GLYPH[ch] || GLYPH[' ']); if (ch === ' ' || ch === '·') w++; BOARD_COL.push(w % 4); }
+}
+const STARS = Array.from({ length: 70 }, () => ({ a: rnd(-Math.PI, Math.PI), e: rnd(0.12, 0.7), b: rnd(0.4, 1), p: rnd(0, 6) }));
+const LIGHTS = [[-40, 15, -26], [40, 15, -26], [-46, 15, 72], [46, 15, 72]];
+const PHI = (1 + Math.sqrt(5)) / 2;
+const ICO = [[0, 1, PHI], [0, -1, PHI], [0, 1, -PHI], [0, -1, -PHI], [1, PHI, 0], [-1, PHI, 0], [1, -PHI, 0], [-1, -PHI, 0], [PHI, 0, 1], [-PHI, 0, 1], [PHI, 0, -1], [-PHI, 0, -1]].map(v => { const l = Math.hypot(...v); return v.map(c => c / l); });
+
+/* ---------------- audio ---------------- */
+const au = { c: null, m: null, noise: null, crowd: null, crowdF: null, muted: false };
+try { au.muted = localStorage.getItem('golazo-mute') === '1'; } catch (e) { }
+function audioInit() {
+  if (au.c) { if (au.c.state === 'suspended') au.c.resume(); return; }
+  try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; au.c = new AC(); } catch (e) { return; }
+  const c = au.c;
+  au.m = c.createGain(); au.m.gain.value = au.muted ? 0 : 0.8; au.m.connect(c.destination);
+  const len = c.sampleRate * 2, nb = c.createBuffer(1, len, c.sampleRate), d = nb.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965545; b2 = 0.57 * b2 + w * 1.0526913; d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.22; }
+  au.noise = nb;
+  const src = c.createBufferSource(); src.buffer = nb; src.loop = true;
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 650; bp.Q.value = 0.7;
+  const g = c.createGain(); g.gain.value = 0.045;
+  src.connect(bp); bp.connect(g); g.connect(au.m); src.start();
+  au.crowd = g; au.crowdF = bp;
+}
+function nsrc(dur) { const s = au.c.createBufferSource(); s.buffer = au.noise; s.loop = true; s.start(au.c.currentTime, Math.random() * 1.5); s.stop(au.c.currentTime + dur + 0.05); return s; }
+function genv(peak, a, dec, t0) { const g = au.c.createGain(), t = t0 || au.c.currentTime; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); g.connect(au.m); return g; }
+function sKick(p) {
+  if (!au.c) return; const c = au.c, t = c.currentTime;
+  const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+  o.connect(genv(0.9 * p + 0.25, 0.004, 0.16)); o.start(t); o.stop(t + 0.2);
+  const n = nsrc(0.05), hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800; n.connect(hp); hp.connect(genv(0.5 * p, 0.002, 0.04));
+}
+function sPost(v) {
+  if (!au.c) return; const c = au.c, t = c.currentTime, a = clamp(v / 22, 0.15, 1);
+  [[523, 1], [1102, 0.6], [1730, 0.45], [2611, 0.3], [3520, 0.18]].forEach(([f, g], i) => { const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f * (1 + rnd(-0.004, 0.004)); o.connect(genv(0.35 * a * g, 0.002, 0.9 - i * 0.12)); o.start(t); o.stop(t + 1.1); });
+  const n = nsrc(0.03), bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3000; n.connect(bp); bp.connect(genv(0.5 * a, 0.001, 0.03));
+}
+function sNet(v) {
+  if (!au.c) return; const c = au.c;
+  const n = nsrc(0.5), bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(2400, c.currentTime); bp.frequency.exponentialRampToValueAtTime(700, c.currentTime + 0.4); bp.Q.value = 1.2;
+  n.connect(bp); bp.connect(genv(clamp(v / 25, 0.2, 0.9), 0.01, 0.42));
+}
+function sThud(v, f = 90) {
+  if (!au.c) return; const c = au.c, t = c.currentTime;
+  const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(f * 1.6, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.12);
+  o.connect(genv(clamp(v / 20, 0.08, 0.7), 0.003, 0.14)); o.start(t); o.stop(t + 0.2);
+  const n = nsrc(0.08), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; n.connect(lp); lp.connect(genv(clamp(v / 30, 0.05, 0.5), 0.002, 0.07));
+}
+function sRoar() {
+  if (!au.c) return; const c = au.c, t = c.currentTime;
+  au.crowd.gain.cancelScheduledValues(t); au.crowd.gain.setValueAtTime(au.crowd.gain.value, t);
+  au.crowd.gain.linearRampToValueAtTime(0.42, t + 0.25); au.crowd.gain.exponentialRampToValueAtTime(0.045, t + 3.2);
+  au.crowdF.frequency.setValueAtTime(650, t); au.crowdF.frequency.linearRampToValueAtTime(1100, t + 0.3); au.crowdF.frequency.linearRampToValueAtTime(650, t + 3);
+}
+function sOoh() {
+  if (!au.c) return; const c = au.c, t = c.currentTime;
+  [[620, 380], [1050, 720]].forEach(([a, b], i) => {
+    const n = nsrc(1.1), bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 5; bp.frequency.setValueAtTime(a, t); bp.frequency.exponentialRampToValueAtTime(b, t + 1);
+    n.connect(bp); bp.connect(genv(i ? 0.25 : 0.45, 0.18, 0.9));
+  });
+}
+function sWhistle() {
+  if (!au.c) return; const c = au.c, t = c.currentTime;
+  const o = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(); o.type = 'square'; o.frequency.value = 2900; l.frequency.value = 28; lg.gain.value = 140;
+  l.connect(lg); lg.connect(o.frequency); const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+  o.connect(lp); lp.connect(genv(0.09, 0.01, 0.32)); o.start(t); l.start(t); o.stop(t + 0.4); l.stop(t + 0.4);
+}
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { } }
+
+/* ---------------- ball physics ---------------- */
+const AC1 = { x: 0, y: 0, z: 0 }, AC2 = { x: 0, y: 0, z: 0 };
+function accel(b, out, useKn) {
+  const rvx = b.vx - wind.x, rvy = b.vy, rvz = b.vz - wind.z;
+  const sp = Math.sqrt(rvx * rvx + rvy * rvy + rvz * rvz) + 1e-6;
+  // drag crisis: a ball loses drag above ~20 m/s
+  const cd = sp > 21 ? 0.21 : sp < 13 ? 0.44 : 0.44 + (sp - 13) / 8 * (0.21 - 0.44);
+  const kd = 0.5 * RHO * AREA * cd / MASS * sp;
+  let ax = -kd * rvx, ay = -kd * rvy - G, az = -kd * rvz;
+  // Magnus, lift coefficient saturates around 0.35
+  const w = Math.sqrt(b.wx * b.wx + b.wy * b.wy + b.wz * b.wz);
+  let km = KM; const S = R * w / sp; if (S > 0.35) km *= 0.35 / S;
+  ax += km * (b.wy * rvz - b.wz * rvy);
+  ay += km * (b.wz * rvx - b.wx * rvz);
+  az += km * (b.wx * rvy - b.wy * rvx);
+  if (useKn && b.kn) { const k = b.kn, f = clamp((sp - 14) / 12, 0, 1); ax += k.a * Math.sin(b.t * k.f1 + k.p1) * f; ay += k.a * 0.55 * Math.sin(b.t * k.f2 + k.p2) * f; }
+  out.x = ax; out.y = ay; out.z = az;
+}
+const QT = new Float64Array(9);
+function rotate(m, wx, wy, wz, dt) {
+  const w = Math.sqrt(wx * wx + wy * wy + wz * wz); if (w < 1e-4) return;
+  const a = w * dt, ux = wx / w, uy = wy / w, uz = wz / w, c = Math.cos(a), s = Math.sin(a), t = 1 - c;
+  const q0 = t * ux * ux + c, q1 = t * ux * uy - s * uz, q2 = t * ux * uz + s * uy, q3 = t * ux * uy + s * uz, q4 = t * uy * uy + c, q5 = t * uy * uz - s * ux, q6 = t * ux * uz - s * uy, q7 = t * uy * uz + s * ux, q8 = t * uz * uz + c;
+  for (let j = 0; j < 3; j++) { const a0 = m[j], a1 = m[3 + j], a2 = m[6 + j]; QT[j] = q0 * a0 + q1 * a1 + q2 * a2; QT[3 + j] = q3 * a0 + q4 * a1 + q5 * a2; QT[6 + j] = q6 * a0 + q7 * a1 + q8 * a2; }
+  for (let i = 0; i < 9; i++) m[i] = QT[i];
+}
+function ortho(m) {
+  let ax = m[0], ay = m[3], az = m[6], l = Math.hypot(ax, ay, az); ax /= l; ay /= l; az /= l;
+  let bx = m[1], by = m[4], bz = m[7]; const d = ax * bx + ay * by + az * bz; bx -= d * ax; by -= d * ay; bz -= d * az; l = Math.hypot(bx, by, bz); bx /= l; by /= l; bz /= l;
+  m[0] = ax; m[3] = ay; m[6] = az; m[1] = bx; m[4] = by; m[7] = bz; m[2] = ay * bz - az * by; m[5] = az * bx - ax * bz; m[8] = ax * by - ay * bx;
+}
+const CP = { x: 0, y: 0, z: 0, t: 0 };
+function closest(px, py, pz, ax, ay, az, bx, by, bz) {
+  const dx = bx - ax, dy = by - ay, dz = bz - az, L = dx * dx + dy * dy + dz * dz || 1e-9;
+  const t = clamp(((px - ax) * dx + (py - ay) * dy + (pz - az) * dz) / L, 0, 1);
+  CP.x = ax + dx * t; CP.y = ay + dy * t; CP.z = az + dz * t; CP.t = t; return CP;
+}
+// sphere (ball) vs capsule; returns impact speed or 0
+function hitCapsule(ax, ay, az, bx, by, bz, rad, e, fric, ovx, ovy) {
+  const b = ball, p = closest(b.x, b.y, b.z, ax, ay, az, bx, by, bz);
+  let dx = b.x - p.x, dy = b.y - p.y, dz = b.z - p.z; const d = Math.sqrt(dx * dx + dy * dy + dz * dz), md = rad + R;
+  if (d >= md || d < 1e-7) return 0;
+  dx /= d; dy /= d; dz /= d;
+  b.x = p.x + dx * md; b.y = p.y + dy * md; b.z = p.z + dz * md;
+  const rvx = b.vx - ovx, rvy = b.vy - ovy, rvz = b.vz, vn = rvx * dx + rvy * dy + rvz * dz;
+  if (vn >= 0) return 0;
+  const tx = rvx - vn * dx, ty = rvy - vn * dy, tz = rvz - vn * dz;
+  b.vx = ovx + tx * fric - e * vn * dx; b.vy = ovy + ty * fric - e * vn * dy; b.vz = tz * fric - e * vn * dz;
+  // contact friction scrubs and twists spin
+  b.wx *= 0.55; b.wy *= 0.55; b.wz *= 0.55;
+  return -vn;
+}
+function keeperJoints(o) {
+  const a = K.pose, lo = K.low, s = Math.sin(K.th), c = Math.cos(K.th), S = K.s, RE = K.reach;
+  const L = (rx, ry, dx, dy, lx, ly, arm) => {
+    let X = lerp(lerp(rx, dx, a), lx, lo) * S, Y = lerp(lerp(ry, dy, a), ly, lo) * S;
+    if (arm && RE !== 1) { const sy = 0.46 * S; X *= RE; Y = sy + (Y - sy) * RE; }
+    return [K.x + c * X + s * Y, K.y - s * X + c * Y];
+  };
+  o.hipL = L(-0.1, 0, -0.08, 0, -0.14, 0.02); o.hipR = L(0.1, 0, 0.08, 0, 0.14, 0.02);
+  o.kneeL = L(-0.21, -0.46, -0.08, -0.48, -0.32, -0.28); o.kneeR = L(0.21, -0.46, 0.08, -0.48, 0.32, -0.28);
+  o.footL = L(-0.25, -0.92, -0.1, -0.95, -0.34, -0.72); o.footR = L(0.25, -0.92, 0.1, -0.95, 0.34, -0.72);
+  o.neck = L(0, 0.52, 0, 0.52, 0, 0.42);
+  o.head = L(0, 0.7, 0, 0.7, 0, 0.6);
+  o.shL = L(-0.17, 0.46, -0.15, 0.46, -0.17, 0.36); o.shR = L(0.17, 0.46, 0.15, 0.46, 0.17, 0.36);
+  o.elL = L(-0.38, 0.3, -0.17, 0.78, -0.3, 0.05, 1); o.elR = L(0.38, 0.3, 0.17, 0.78, 0.3, 0.05, 1);
+  o.haL = L(-0.5, 0.36, -0.13, 1.1, -0.2, -0.3, 1); o.haR = L(0.5, 0.36, 0.13, 1.1, 0.2, -0.3, 1);
+  return o;
+}
+const KJ = {};
+const KTYPES = {
+  gato:    { name: 'EL GATO', desc: 'Rápido y fiable', s: 1, z: 0.45, react: 0, speed: 1, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.09, jersey: [255, 196, 64], alt: [40, 32, 78], pat: { k: 'sides', w: 0.74 }, shorts: [34, 28, 66], glove: [124, 240, 200], sock: [255, 186, 52], num: [40, 32, 78], look: { style: 'short', hair: [38, 26, 22], skin: [204, 150, 108] } },
+  libero:  { name: 'EL LÍBERO', desc: 'Juega muy adelantado: prueba la vaselina', s: 1, z: 2.7, react: -0.03, speed: 1.08, jump: 1, err: 1, catch: 0.9, reach: 1, gamble: 0.05, jersey: [124, 240, 200], alt: [26, 92, 92], pat: { k: 'hoops', n: 5 }, shorts: [18, 58, 60], glove: [255, 200, 74], sock: [124, 240, 200], num: [18, 58, 60], look: { style: 'band', hair: [120, 70, 36], bandC: [255, 200, 74], skin: [236, 196, 156] } },
+  gigante: { name: 'EL GIGANTE', desc: 'Enorme pero lento', s: 1.2, z: 0.4, react: 0.05, speed: 0.76, jump: 0.85, err: 1, catch: 1.1, reach: 1, gamble: 0.04, jersey: [150, 110, 230], alt: [255, 200, 74], pat: { k: 'panel', w: 0.2 }, shorts: [30, 20, 60], glove: [250, 250, 244], sock: [150, 110, 230], num: [255, 200, 74], look: { style: 'bald', beard: true, hair: [24, 18, 18], skin: [140, 96, 64] } },
+  adivino: { name: 'EL ADIVINO', desc: 'Casi siempre se tira al mismo lado', s: 1, z: 0.45, react: 0, speed: 1.05, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.6, jersey: [255, 110, 90], alt: [70, 26, 44], pat: { k: 'half' }, shorts: [44, 20, 30], glove: [255, 230, 120], sock: [255, 110, 90], num: [250, 246, 236], look: { style: 'long', hair: [226, 190, 110], skin: [236, 196, 156] } },
+  pulpo:   { name: 'EL PULPO', desc: 'Brazos larguísimos, reacciona tarde', s: 1.04, z: 0.5, react: 0.07, speed: 0.95, jump: 1, err: 1.1, catch: 1.35, reach: 1.22, gamble: 0.05, jersey: [90, 200, 255], alt: [244, 242, 232], pat: { k: 'stripes', n: 3 }, shorts: [20, 30, 70], glove: [255, 120, 180], sock: [90, 200, 255], num: [20, 30, 70], look: { style: 'cap', capC: [20, 30, 70], hair: [20, 16, 18], skin: [204, 150, 108] } }
+};
+let adivinoSide = 1;
+const WKITS = [
+  { shirt: [214, 62, 66], alt: [246, 240, 228], pat: { k: 'stripes', n: 3 }, shorts: [246, 240, 228], socks: [214, 62, 66], band: [246, 240, 228], collar: [246, 240, 228] },
+  { shirt: [58, 104, 210], alt: [236, 238, 232], pat: { k: 'hoops', n: 4 }, shorts: [246, 240, 228], socks: [58, 104, 210], band: [246, 240, 228], collar: [246, 240, 228] },
+  { shirt: [44, 156, 96], alt: [246, 240, 228], pat: { k: 'sides', w: 0.58 }, shorts: [32, 40, 38], socks: [44, 156, 96], band: [246, 240, 228], collar: [246, 240, 228] },
+  { shirt: [34, 30, 46], alt: [240, 236, 226], pat: { k: 'stripes', n: 4 }, shorts: [34, 30, 46], socks: [34, 30, 46], band: [240, 236, 226], collar: [240, 236, 226] },
+  { shirt: [242, 238, 226], alt: [214, 62, 66], pat: { k: 'panel', w: 0.26 }, shorts: [62, 52, 116], socks: [242, 238, 226], band: [214, 62, 66], collar: [214, 62, 66] },
+  { shirt: [246, 160, 40], alt: [34, 30, 66], pat: { k: 'sides', w: 0.66 }, shorts: [34, 30, 66], socks: [246, 160, 40], band: [34, 30, 66], collar: [34, 30, 66] }
+];
+const HAIRC = [[38, 26, 22], [20, 16, 18], [110, 64, 34], [224, 186, 108], [168, 76, 40], [70, 68, 78]];
+const HSTYLES = ['short', 'short', 'short', 'buzz', 'buzz', 'afro', 'long', 'bald', 'mohawk', 'bun'];
+let wallKit = WKITS[0];
+const DEF_LOOK = { style: 'short', hair: [38, 26, 22], beard: false, h: 1, ph: 0, skin: [204, 150, 108] };
+function dress(m) {
+  const skin = SKINS[(Math.random() * SKINS.length) | 0];
+  let style = HSTYLES[(Math.random() * HSTYLES.length) | 0];
+  let hair = HAIRC[(Math.random() * HAIRC.length) | 0];
+  if (style === 'afro' || style === 'buzz') hair = Math.random() < 0.7 ? [20, 16, 18] : hair;
+  m.look = { style, hair, beard: Math.random() < 0.28, h: rnd(0.95, 1.06), ph: rnd(0, 6.28), skin };
+}
+K.type = KTYPES.gato; K.s = 1; K.reach = 1; K.gside = 1;
+function ballVsKeeper() {
+  if (ball.held || Math.abs(ball.z - K.z) > 0.6 || Math.abs(ball.x - K.x) > 2.4 * K.s * K.reach) return;
+  keeperJoints(KJ);
+  const z = K.z, f = flight; let imp = 0, part = '';
+  const hip = [(KJ.hipL[0] + KJ.hipR[0]) / 2, (KJ.hipL[1] + KJ.hipR[1]) / 2];
+  const segs = [
+    [hip, KJ.head, 0.19 * K.s, 'body'], [KJ.hipL, KJ.footL, 0.09 * K.s, 'leg'], [KJ.hipR, KJ.footR, 0.09 * K.s, 'leg'],
+    [KJ.shL, KJ.haL, 0.11 * K.s, 'armL'], [KJ.shR, KJ.haR, 0.11 * K.s, 'armR']
+  ];
+  for (const [A, B, r, nm] of segs) {
+    const v = hitCapsule(A[0], A[1], z, B[0], B[1], z, r, 0.32, 0.55, K.vx, K.vy);
+    if (v > imp) { imp = v; part = nm; }
+  }
+  if (!imp) return;
+  f.keeper = true; f.last = 'keeper';
+  const relV = imp;
+  const nearHands = (part === 'armL' || part === 'armR') ? CP.t > 0.5 : part === 'body';
+  const steady = K.mode === 'set' || K.mode === 'ready' || K.mode === 'watch';
+  if (nearHands && relV < K.p.catchV * (steady ? 1 : 0.62) && !f.outcome && ball.z > -0.05) {
+    ball.held = true; ball.live = false; sThud(relV, 70); buzz(25);
+  } else {
+    // goalkeepers palm the ball wide, not back into play
+    if (part !== 'leg') ball.vx += Math.sign(ball.x - K.x || 1) * Math.min(3, relV * 0.15);
+    sThud(relV, part === 'leg' ? 120 : 80);
+    spawnBurst(ball.x, ball.y, ball.z, 6, C.cream, 2);
+  }
+}
+function ballVsWall() {
+  for (const m of wall) {
+    if (m.type === 'lie') {
+      if (Math.abs(ball.z - m.z) > 1.3 || Math.abs(ball.x - m.x) > 1.3 || ball.y > 0.6) continue;
+      const v = hitCapsule(m.x - m.px * 0.85, 0.17, m.z - m.pz * 0.85, m.x + m.px * 0.85, 0.17, m.z + m.pz * 0.85, 0.17, 0.35, 0.6, 0, 0);
+      if (v) { flight.wall = true; flight.last = 'wall'; sThud(v, 100); spawnBurst(ball.x, ball.y, ball.z, 5, C.cream, 2); }
+      continue;
+    }
+    if (Math.abs(ball.z - m.z) > 0.6 || Math.abs(ball.x - m.x) > 0.7) continue;
+    const v = hitCapsule(m.x, 0.14 + m.y, m.z, m.x, 1.66 + m.y, m.z, 0.23, 0.38, 0.7, 0, m.vy);
+    if (v) { flight.wall = true; flight.last = 'wall'; sThud(v, 100); spawnBurst(ball.x, ball.y, ball.z, 5, C.cream, 2); }
+    if (!flight.under && m.y > 0.12 && Math.abs(ball.x - m.x) < 0.3 && Math.abs(ball.z - m.z) < 0.2 && ball.y < m.y + 0.12) flight.under = true;
+  }
+}
+function ballVsFrame() {
+  const X = GOAL_HW + POST_R, Y = GOAL_H + POST_R;
+  const hits = [
+    hitCapsule(-X, 0, 0, -X, Y, 0, POST_R, 0.72, 0.92, 0, 0),
+    hitCapsule(X, 0, 0, X, Y, 0, POST_R, 0.72, 0.92, 0, 0),
+    hitCapsule(-X, Y, 0, X, Y, 0, POST_R, 0.72, 0.92, 0, 0)
+  ];
+  const v = Math.max(...hits);
+  if (v > 0.5 && flight) {
+    flight.post = true; flight.last = 'post'; flight.bar = hits[2] >= Math.max(hits[0], hits[1]);
+    sPost(v); buzz(30); stopT = Math.max(stopT, 0.05); shake = Math.max(shake, 0.25 * clamp(v / 15, 0.4, 1));
+    spawnBurst(ball.x, ball.y, ball.z, 10, C.gold, 3);
+  }
+}
+function ballVsNet() {
+  const b = ball, f = flight;
+  if (b.z > 0.2 || b.z < -NET_D - 1) return;
+  const ax = Math.abs(b.x);
+  if (f && f.entered) {
+    let hit = 0;
+    if (b.z < -NET_D + R) { hit = Math.max(hit, -b.vz); if (b.vz < 0) { net.vel -= b.vz * 0.14; net.x = b.x; net.y = b.y; b.vz *= -0.12; b.vx *= 0.55; b.vy *= 0.55; } b.z = -NET_D + R; }
+    if (b.z < 0 && ax > GOAL_HW - R) { hit = Math.max(hit, Math.abs(b.vx)); b.x = Math.sign(b.x) * (GOAL_HW - R); b.vx *= -0.15; b.vz *= 0.7; }
+    if (b.z < 0 && b.y > GOAL_H - R) { hit = Math.max(hit, b.vy); b.y = GOAL_H - R; if (b.vy > 0) b.vy *= -0.15; b.vz *= 0.75; }
+    if (hit > 3 && !f.netSnd) { f.netSnd = true; sNet(hit); stopT = Math.max(stopT, 0.09); }
+    return;
+  }
+  // outside: side netting and roof act as soft walls
+  if (f && f.crossedOut && b.z < 0 && b.z > -NET_D - R && b.y < GOAL_H + R && ax < GOAL_HW + R) {
+    const dSide = GOAL_HW + R - ax, dRoof = GOAL_H + R - b.y, dBack = b.z + NET_D + R;
+    const dmin = Math.min(dSide, dRoof, dBack);
+    if (dmin === dSide) { b.x = Math.sign(b.x) * (GOAL_HW + R); if (b.vx * Math.sign(b.x) < 0) b.vx *= -0.12; b.vz *= 0.6; b.vy *= 0.8; }
+    else if (dmin === dRoof) { b.y = GOAL_H + R; if (b.vy < 0) b.vy *= -0.15; b.vz *= 0.75; b.vx *= 0.8; }
+    else { b.z = -NET_D - R; if (b.vz > 0) b.vz *= -0.15; }
+    if (f && !f.sideNet) { f.sideNet = true; sNet(Math.hypot(b.vx, b.vz) + 4); }
+  }
+}
+function stepBall(dt) {
+  const b = ball, f = flight;
+  if (b.held) {
+    keeperJoints(KJ);
+    b.x = (KJ.haL[0] + KJ.haR[0]) / 2; b.y = (KJ.haL[1] + KJ.haR[1]) / 2; b.z = K.z + 0.12;
+    b.vx = K.vx; b.vy = K.vy; b.vz = 0; b.wx *= 0.9; b.wy *= 0.9; b.wz *= 0.9;
+    return;
+  }
+  if (!b.live) return;
+  b.t += dt;
+  accel(b, AC1, true);
+  b.vx += AC1.x * dt; b.vy += AC1.y * dt; b.vz += AC1.z * dt;
+  const pz = b.z;
+  b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+  const sd = Math.exp(-0.1 * dt); b.wx *= sd; b.wy *= sd; b.wz *= sd;
+  if (f) {
+    ballVsWall(); ballVsKeeper(); ballVsFrame();
+    // keeper plane crossing: nutmeg
+    if (pz > K.z && b.z <= K.z && !f.keeper && K.mode !== 'dive' && K.mode !== 'push' && Math.abs(b.x - K.x) < 0.17 && b.y < 0.42 && K.pose < 0.4) f.nutmeg = true;
+    // goal line
+    if (pz > 0 && b.z <= 0 && !f.crossed) {
+      f.crossed = true; f.crossX = b.x; f.crossY = b.y; f.crossV = Math.hypot(b.vx, b.vy, b.vz);
+      f.entered = Math.abs(b.x) < GOAL_HW && b.y < GOAL_H;
+      if (!f.entered) f.crossedOut = true;
+      else if (target && Math.hypot(b.x - target.x, b.y - target.y) < target.r + R * 0.6) f.target = true;
+    }
+    // net only after the goal-line check, so a ball entering the mouth is never mistaken for side netting
+    ballVsNet();
+    if (f.entered && b.z < -R && !f.goal && !f.outcome) f.goal = true;
+  }
+  // boards around the pitch
+  if (b.z < -6 + R) { b.z = -6 + R; if (b.vz < 0) { if (b.vz < -4) sThud(-b.vz * 0.6, 160); b.vz *= -0.4; b.vx *= 0.7; } }
+  if (Math.abs(b.x) > 40 - R) { b.x = Math.sign(b.x) * (40 - R); b.vx *= -0.4; }
+  // grass
+  if (b.y < R) {
+    b.y = R;
+    if (b.vy < -0.7) {
+      const v = -b.vy; b.vy = v * 0.56;
+      // grass bite: horizontal speed lost, spin couples into it
+      const k = 0.84; b.vx *= k; b.vz *= k; b.wy *= 0.6;
+      if (v > 2.5) sThud(v * 0.5, 140);
+      if (v > 3) spawnBurst(b.x, 0.02, b.z, 5, C.grassB, 1.5);
+    } else {
+      b.vy = 0;
+      const sp = Math.hypot(b.vx, b.vz);
+      if (sp > 1e-3) { const ns = Math.max(0, sp - 1.25 * dt - sp * 0.12 * dt); b.vx *= ns / sp; b.vz *= ns / sp; }
+      b.wx = b.vz / R; b.wz = -b.vx / R; b.wy *= Math.exp(-4 * dt);
+    }
+  }
+  rotate(b.m, b.wx, b.wy, b.wz, dt);
+}
+function predict(zPlane) {
+  const s = { x: ball.x, y: ball.y, z: ball.z, vx: ball.vx, vy: ball.vy, vz: ball.vz, wx: ball.wx, wy: ball.wy, wz: ball.wz, t: 0, kn: null };
+  const dt = 1 / 120;
+  for (let i = 0; i < 480; i++) {
+    accel(s, AC2, false);
+    s.vx += AC2.x * dt; s.vy += AC2.y * dt; s.vz += AC2.z * dt;
+    s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; s.t += dt;
+    if (s.y < R) { s.y = R; if (s.vy < 0) s.vy = -s.vy * 0.56; s.vx *= 0.85; s.vz *= 0.85; }
+    if (s.z <= zPlane) return { x: s.x, y: s.y, t: s.t };
+    if (s.vz > -0.6) return null;
+  }
+  return null;
+}
+
+/* ---------------- goalkeeper ---------------- */
+function keeperPlace() {
+  const rolling = kick.kind === 'rodando' && !flight;
+  const bx = rolling ? ball.x : spot.x, bz = rolling ? ball.z : spot.z;
+  let lx = -GOAL_HW - bx, lz = -bz, rx = GOAL_HW - bx, rz = -bz;
+  let l = Math.hypot(lx, lz); lx /= l; lz /= l; l = Math.hypot(rx, rz); rx /= l; rz /= l;
+  const ux = lx + rx, uz = lz + rz;
+  let x = bx + ux * (K.z - bz) / uz;
+  if (wall.length && wall.side) x += -Math.sign(wall.side) * 0.45;
+  if (!isFinite(x)) x = 0;
+  K.tx = clamp(x, -2.4, 2.4);
+}
+function keeperReset() {
+  keeperPlace();
+  Object.assign(K, { x: K.tx, y: 0.98 * K.s, vx: 0, vy: 0, th: 0, thT: 0, mode: 'ready', pose: 0, low: 0, decided: false, jumped: false });
+}
+function keeperDecide() {
+  K.decided = true;
+  const pr = predict(K.z); if (!pr) { K.mode = 'watch'; return; }
+  const p = K.p, spinF = 0.35 + Math.abs(ball.wy) / 45 + (ball.kn ? 1.1 : 0);
+  const px = pr.x + gauss() * p.err * spinF * 0.5;
+  const py = clamp(pr.y + gauss() * p.err * 0.22, 0.12, 3.2);
+  if (Math.abs(px) > GOAL_HW + 0.8 || py > GOAL_H + 0.6) { K.mode = 'watch'; return; }
+  const dx = px - K.x;
+  if (Math.abs(dx) < 0.58 * K.s && py < 2.15 * K.s) { K.mode = 'set'; K.setX = px; K.setY = py; K.jumped = false; return; }
+  dive(px, py, Math.max(0.08, pr.t - 0.07));
+}
+function dive(px, py, tr) {
+  const p = K.p, dx = px - K.x, sg = Math.sign(dx) || 1;
+  let th = Math.atan2(Math.abs(dx), py - 0.95 * K.s); th = clamp(th, 0.3, 1.6) * sg;
+  const HR = 1.08 * K.s * K.reach;
+  const tx = px - Math.sin(th) * HR, ty = Math.max(0.32 * K.s, py - Math.cos(th) * HR);
+  K.vxT = clamp((tx - K.x) / tr, -p.vmax, p.vmax);
+  K.vyT = clamp((ty - 0.85 * K.s + 0.5 * G * tr * tr) / tr, 0, p.vy);
+  K.thT = th; K.thRate = Math.abs(th) / clamp(tr, 0.14, 0.42);
+  K.mode = 'push'; K.push = 0.07;
+}
+function keeperUpdate(dt) {
+  const p = K.p, shooting = flight && ball.live && !ball.held;
+  const e = k => 1 - Math.exp(-k * dt);
+  switch (K.mode) {
+    case 'ready': {
+      if (kick.kind === 'rodando' && !flight) keeperPlace();
+      K.vx = clamp((K.tx - K.x) * 6, -2.6, 2.6); K.x += K.vx * dt;
+      K.y = lerp(K.y, (0.98 + 0.018 * Math.sin(simT * 7.5)) * K.s, e(10)); K.th = lerp(K.th, 0, e(10));
+      K.pose = lerp(K.pose, 0, e(8)); K.low = lerp(K.low, 0, e(8));
+      if (shooting && !K.decided) {
+        if (K.gambleAt > 0 && ball.t >= K.gambleAt) { K.decided = true; dive(K.gside * rnd(2.0, 3.1), rnd(0.4, 1.9), 0.5); }
+        else if (ball.t >= p.tau) keeperDecide();
+      }
+      break;
+    }
+    case 'push': {
+      K.push -= dt; K.y = lerp(K.y, 0.85 * K.s, e(30)); K.vx = lerp(K.vx, K.vxT * 0.35, e(25)); K.x += K.vx * dt;
+      K.th = lerp(K.th, K.thT * 0.15, e(20));
+      if (K.push <= 0) { K.mode = 'dive'; K.vx = K.vxT; K.vy = K.vyT; }
+      break;
+    }
+    case 'dive': {
+      K.vy -= G * dt; K.x += K.vx * dt; K.y += K.vy * dt;
+      const dth = K.thT - K.th, st = K.thRate * dt; K.th += Math.abs(dth) < st ? dth : Math.sign(dth) * st;
+      K.pose = lerp(K.pose, 1, e(14));
+      const gy = (0.22 + 0.76 * Math.abs(Math.cos(K.th))) * K.s;
+      if (K.y <= gy && K.vy < 0) { K.y = gy; K.vy = 0; K.vx *= 0.35; K.mode = 'down'; sThud(5, 60); spawnBurst(K.x, 0.05, K.z, 8, C.grassB, 1.5); }
+      break;
+    }
+    case 'down': {
+      K.vx *= Math.exp(-5 * dt); K.x += K.vx * dt;
+      const gy = (0.22 + 0.76 * Math.abs(Math.cos(K.th))) * K.s; K.y = lerp(K.y, gy, e(10));
+      break;
+    }
+    case 'set': {
+      const dx = K.setX - K.x; K.vx = clamp(dx * 9, -3.2, 3.2); K.x += K.vx * dt;
+      const high = K.setY > 1.15, low = K.setY < 0.55;
+      K.pose = lerp(K.pose, high ? 1 : 0.15, e(14)); K.low = lerp(K.low, low ? 1 : 0, e(14));
+      K.th = lerp(K.th, clamp(dx * 0.5, -0.35, 0.35), e(8));
+      if (K.setY > 1.85 * K.s && !K.jumped) { K.jumped = true; K.vy = Math.min(p.vy, Math.sqrt(2 * G * (K.setY - 1.8 * K.s))); }
+      K.vy -= G * dt; K.y += K.vy * dt;
+      const gy = (low ? 0.62 : 0.97) * K.s; if (K.y < gy) { K.y = lerp(K.y, gy, e(25)); if (K.vy < 0) K.vy = 0; }
+      break;
+    }
+    case 'watch': {
+      K.vx = clamp((ball.x * 0.25 - K.x) * 2, -1.2, 1.2); K.x += K.vx * dt * 0.4;
+      K.pose = lerp(K.pose, 0.25, e(6)); K.y = lerp(K.y, 0.98 * K.s, e(8));
+      break;
+    }
+  }
+}
+function wallUpdate(dt) {
+  for (const m of wall) {
+    if (m.type === 'lie') continue;
+    if (m.type === 'charge') {
+      if (flight && ball.live && ball.t >= m.jumpAt && m.runT < m.runMax) {
+        if (m.track) { let dx = ball.x - m.x, dz = ball.z - m.z; const l = Math.hypot(dx, dz) || 1; m.cdx = dx / l; m.cdz = dz / l; }
+        m.x += m.cdx * m.speed * dt; m.z += m.cdz * m.speed * dt; m.runT += dt; m.run = (m.run || 0) + dt;
+      }
+      continue;
+    }
+    if (flight && ball.t >= m.jumpAt && !m.jumped) { m.jumped = true; m.vy = m.jv; }
+    if (m.jumped) { m.vy -= G * dt; m.y += m.vy * dt; if (m.y < 0) { m.y = 0; m.vy = 0; } }
+  }
+}
+
+/* ---------------- kicking ---------------- */
+function solveLoft(D, h, v, back) {
+  let lo = -0.12, hi = 0.85;
+  const s = { x: 0, y: R, z: 0, vx: 0, vy: 0, vz: 0, wx: back, wy: 0, wz: 0, t: 0, kn: null };
+  const dt = 1 / 90;
+  for (let it = 0; it < 22; it++) {
+    const a = (lo + hi) / 2;
+    s.x = 0; s.y = R; s.z = 0; s.vx = 0; s.vy = v * Math.sin(a); s.vz = -v * Math.cos(a); s.wx = back;
+    let y = -9;
+    for (let i = 0; i < 400; i++) {
+      accel(s, AC2, false); s.vx += AC2.x * dt; s.vy += AC2.y * dt; s.vz += AC2.z * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+      if (-s.z >= D) { y = s.y; break; }
+      if (s.vz > -0.5) break;
+    }
+    if (y < h) lo = a; else hi = a;
+  }
+  return (lo + hi) / 2;
+}
+// vertical plane through the goal centre, facing the ball: works head-on and from the corner flag
+function rayToGoalPlane(sx, sy) {
+  const k = (sx - cx) / F, kv = (hz - sy) / F;
+  const dx = fx + rxv * k, dy = kv, dz = fz + rzv * k;
+  let nx = ball.x, nz = ball.z; const nl = Math.hypot(nx, nz) || 1; nx /= nl; nz /= nl;
+  const den = dx * nx + dz * nz;
+  if (den > -0.02) return null;
+  const t = -(cam.x * nx + cam.z * nz) / den;
+  if (t <= 0) return null;
+  return { x: cam.x + dx * t, y: cam.y + dy * t, z: cam.z + dz * t };
+}
+const PP = { x: 0, y: 0, z: 0 };
+function proj(x, y, z, o) {
+  const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z, zc = dx * fx + dz * fz;
+  if (zc < 0.15) return false;
+  const xc = dx * rxv + dz * rzv;
+  o.x = cx + F * xc / zc; o.y = hz - F * dy / zc; o.z = zc; return true;
+}
+function shoot(sw) {
+  const pts = sw.pts; if (pts.length < 2) return false;
+  const E = pts[pts.length - 1];
+  let si = 0; while (si < pts.length - 2 && E.t - pts[si].t > 420) si++;
+  const S = pts[si];
+  const dx = E.x - S.x, dy = E.y - S.y, L = Math.hypot(dx, dy), dur = Math.max(35, E.t - S.t);
+  if (L < H * 0.035 || dy > -H * 0.02) return false;
+  const sp = (L / H) / (dur / 1000);
+  const v0 = clamp(11 + sp * 8.6, 12, 36);
+  // curvature of the gesture → side spin
+  let dev = 0;
+  for (let i = si + 1; i < pts.length - 1; i++) { const d = (dx * (pts[i].y - S.y) - dy * (pts[i].x - S.x)) / L; if (Math.abs(d) > Math.abs(dev)) dev = d; }
+  let dn = dev / L; dn = Math.abs(dn) < 0.035 ? 0 : dn - Math.sign(dn) * 0.035;
+  const wy = clamp(dn * 300, -72, 72);
+  // where the gesture points on screen → point on the goal plane
+  proj(ball.x, ball.y, ball.z, PP); const bsx = PP.x, bsy = PP.y;
+  proj(0, 1.2, 0, PP); const gain = Math.max(0.5, (bsy - PP.y) / (0.3 * H));
+  const tgt = rayToGoalPlane(bsx + dx * gain, bsy + dy * gain);
+  if (!tgt) return false;
+  // height comes from how far up the finger travels, with a soft ceiling:
+  // a normal swipe aims at the goal, a long one tops out just over the bar instead of the sky
+  const up = Math.max(0, -dy) / H;
+  tgt.y = 0.15 + 2.75 * (1 - Math.exp(-up / 0.3));
+  return launch(tgt, v0, wy, 7 * clamp(1 - Math.abs(wy) / 60, 0.2, 1), Math.abs(wy) < 9);
+}
+function launch(tgt, v0, wy, back, knOK) {
+  const tz = tgt.z || 0;
+  let hx = tgt.x - ball.x, hz_ = tz - ball.z, D = Math.hypot(hx, hz_); hx /= D; hz_ /= D;
+  // aim off so the curve brings it back to the line the finger drew
+  const rightX = -hz_, rightZ = hx;
+  const tFl = D / (v0 * 0.88), aCurve = KM * Math.abs(wy) * v0 * 0.8;
+  const off = 0.5 * aCurve * tFl * tFl * 0.85 * Math.sign(wy);
+  let ax = tgt.x + rightX * off, az = tz + rightZ * off;
+  hx = ax - ball.x; hz_ = az - ball.z; D = Math.hypot(hx, hz_); hx /= D; hz_ /= D;
+  const vRef = 0.78 * v0 + 0.22 * 25;
+  const loft = solveLoft(D, tgt.y - R, vRef, back);
+  const ch = Math.cos(loft);
+  const b = ball;
+  b.vx = v0 * ch * hx; b.vy = v0 * Math.sin(loft); b.vz = v0 * ch * hz_;
+  b.wx = back * (-hz_); b.wz = back * hx; b.wy = wy;
+  b.kn = (knOK && v0 > 26.5) ? { a: clamp((v0 - 26) * 0.5, 0.6, 3.4), f1: rnd(5, 9), f2: rnd(4, 8), p1: rnd(0, 6.3), p2: rnd(0, 6.3) } : null;
+  b.t = 0; b.live = true; b.held = false;
+  kickPos.x = b.x; kickPos.z = b.z;
+  rec = []; recOn = true; recCnt = 0;
+  flight = { v0, wy0: wy, knuckle: !!b.kn, dist: Math.hypot(b.x, b.z), kind: kick.kind, outcome: null, crossed: false, entered: false, crossedOut: false, goal: false, outT: 0, awayT: 0, keeper: false, wall: false, post: false, bar: false, sideNet: false, last: '', nutmeg: false, under: false, target: false, netSnd: false, slowUsed: false };
+  state = 'flight'; shots++;
+  sKick(clamp((v0 - 12) / 24, 0, 1)); buzz(12);
+  kickFlash = 0.16; shake = Math.max(shake, 0.12 + v0 / 160);
+  spawnBurst(b.x, 0.03, b.z, 12, C.grassB, 2.2);
+  trail.length = 0;
+  $('hint').hidden = true;
+  pending = null;
+  return true;
+}
+
+/* ---------------- slingshot mode ---------------- */
+let mode = 'swipe', sling = null, pending = null;
+try { if (localStorage.getItem('golazo-mode') === 'sling') mode = 'sling'; } catch (e) { }
+function slingAim(dx, dy) {
+  const L = Math.hypot(dx, dy) / H;
+  if (dy < H * 0.025 || L < 0.04) return null;
+  const pw = clamp((L - 0.03) / 0.3, 0, 1);
+  proj(ball.x, ball.y, ball.z, PP); const bsx = PP.x, bsy = PP.y;
+  proj(0, 1.2, 0, PP); const gy = PP.y;
+  const t = (bsy - gy) / dy, sx = clamp(bsx - dx * t, -W * 1.5, W * 2.5);
+  const tg = rayToGoalPlane(sx, gy); if (!tg) return null;
+  return { x: tg.x, z: tg.z, pw, v0: 12 + pw * 24, bsx, bsy, sx, gy };
+}
+function openContact(a) {
+  pending = a;
+  $('cpowbar').style.width = Math.round(a.pw * 100) + '%';
+  $('cmark').hidden = true;
+  $('contact').hidden = false;
+  $('hint').hidden = true;
+}
+function closeContact() { $('contact').hidden = true; pending = null; }
+function kickSling(u, v) {
+  if (!pending || state !== 'aim') return;
+  let r = Math.hypot(u, v); if (r > 1) { u /= r; v /= r; r = 1; }
+  // off-centre contact: more spin but a poorer strike
+  const v0 = pending.v0 * (r > 0.72 ? 1 - (r - 0.72) * 0.9 : 1);
+  const wy = u * 74;                                  // hit its right side → spins anticlockwise → curls left
+  const back = 4 - v * 16;                             // under the ball → backspin and lift; on top → topspin and dip
+  const tgtY = clamp(1.15 - v * 1.5, 0.12, 2.9);
+  const a = pending;
+  $('contact').hidden = true;
+  launch({ x: a.x, y: tgtY, z: a.z }, v0, wy, back, r < 0.14);
+}
+function setMode(m) {
+  mode = m; try { localStorage.setItem('golazo-mode', m); } catch (e) { }
+  sling = null; swipe = null; if (pending) closeContact();
+  document.querySelectorAll('.modes button').forEach(b => b.setAttribute('aria-checked', b.dataset.mode === m ? 'true' : 'false'));
+  $('howSwipe').hidden = m !== 'swipe'; $('howSling').hidden = m !== 'sling';
+  $('modeBtn').textContent = m === 'swipe' ? 'DESLIZAR' : 'TIRACHINAS';
+  $('hint').innerHTML = m === 'swipe' ? 'DESLIZA HACIA LA PORTERÍA<br>CURVA EL GESTO PARA DAR ROSCA' : 'ARRASTRA HACIA ATRÁS PARA APUNTAR<br>SUELTA Y TOCA EL BALÓN PARA GOLPEAR';
+}
+function drawSling() {
+  let a = null, fxp = 0, fyp = 0;
+  if (sling) { a = slingAim(sling.x - sling.sx, sling.y - sling.sy); fxp = sling.x; fyp = sling.y; }
+  else if (pending) a = pending;
+  if (sling && proj(ball.x, ball.y, ball.z, PP)) {
+    // elastic band from the ball to the finger
+    const n = Math.ceil(Math.hypot(fxp - PP.x, fyp - PP.y) / 2);
+    for (let k = 0; k <= n; k++) { const t = k / Math.max(1, n); blendp(lerp(PP.x, fxp, t), lerp(PP.y, fyp, t), 247, 237, 211, 0.45); }
+  }
+  if (!a) return;
+  const ex = lerp(a.bsx, a.sx, 0.18 + 0.82 * a.pw), ey = lerp(a.bsy, a.gy, 0.18 + 0.82 * a.pw);
+  const n = Math.ceil(Math.hypot(ex - a.bsx, ey - a.bsy) / 2), col = [lerp(255, 255, a.pw), lerp(210, 102, a.pw), lerp(90, 80, a.pw)];
+  for (let k = 3; k <= n; k++) { if (((k + Math.floor(realT * 14)) & 3) === 3) continue; const t = k / Math.max(1, n); const x = lerp(a.bsx, ex, t), y = lerp(a.bsy, ey, t); blendp(x, y, col[0], col[1], col[2], 0.95); blendp(x + 1, y, col[0], col[1], col[2], 0.6); }
+  // arrow head
+  const ang = Math.atan2(ey - a.bsy, ex - a.bsx);
+  for (let k = 0; k < 6; k++) for (const s of [-1, 1]) { const aa = ang + Math.PI + s * 0.5; pset(ex + Math.cos(aa) * k, ey + Math.sin(aa) * k, PK(col.map(Math.round))); }
+}
+
+/* ---------------- flow ---------------- */
+function setCamFor(sp) {
+  const ax = sp.x * 0.1, dx = ax - sp.x, dz = -sp.z, l = Math.hypot(dx, dz), ux = dx / l, uz = dz / l;
+  camBase.x = sp.x - ux * 3.3; camBase.z = sp.z - uz * 3.3; camBase.y = 1.75; camBase.yaw = Math.atan2(ux, -uz);
+}
+function placeBall() {
+  Object.assign(ball, { x: spot.x, y: R, z: spot.z, vx: 0, vy: 0, vz: 0, wx: 0, wy: 0, wz: 0, held: false, live: false, kn: null, t: 0 });
+}
+const KINDS = {
+  falta: { name: 'TIRO LIBRE', sub: '' },
+  pico: { name: 'PICO DEL ÁREA', sub: 'Ángulo cerrado' },
+  escorada: { name: 'FALTA ESCORADA', sub: 'Casi sin ángulo' },
+  corner: { name: 'CÓRNER', sub: 'A por el gol olímpico' },
+  rodando: { name: 'PASE DE LA MUERTE', sub: 'Chuta al primer toque' }
+};
+function pickKind(n) {
+  if (DEBUG && window.__forceKind) return window.__forceKind;
+  if (n < 2) return 'falta';
+  const r = Math.random();
+  if (n >= 6 && r < 0.09) return 'corner';
+  if (n >= 4 && r < 0.27) return 'rodando';
+  if (n >= 3 && r < 0.42) return 'escorada';
+  if (r < 0.58) return 'pico';
+  return 'falta';
+}
+function newKick(first) {
+  const n = goals;
+  const kind = pickKind(n), sd = Math.random() < 0.5 ? -1 : 1;
+  kick = { kind, P: null, dir: null, started: false };
+  let dist = 17 + Math.min(n, 30) * 0.42 + rnd(0, 4), wantWall = true;
+  if (kind === 'pico') spot = { x: sd * rnd(14.5, 19.5), z: rnd(16.8, 19.5) };
+  else if (kind === 'escorada') spot = { x: sd * rnd(21, 27), z: rnd(5, 13) };
+  else if (kind === 'corner') { spot = { x: sd * 33.4, z: 0.6 }; wantWall = false; }
+  else if (kind === 'rodando') {
+    spot = { x: rnd(-7, 7), z: rnd(17.5, 22) }; wantWall = false;
+    const st = { x: spot.x + sd * rnd(3, 5), z: spot.z - rnd(9, 11) };
+    let dx = spot.x - st.x, dz = spot.z - st.z; const l = Math.hypot(dx, dz);
+    kick.P = { x: spot.x, z: spot.z }; kick.start = st; kick.dir = { x: dx / l, z: dz / l }; kick.speed = rnd(7.4, 8.6);
+  } else {
+    const angMax = Math.min(0.72, 0.1 + n * 0.035), ang = rnd(-1, 1) * angMax;
+    spot = { x: Math.sin(ang) * dist, z: Math.cos(ang) * dist };
+    if (spot.z < 17.6 && Math.abs(spot.x) < 20.6) spot.z = 17.6;
+  }
+  // wall
+  wall = [];
+  dist = Math.hypot(spot.x, spot.z);
+  if (wantWall && n >= 1 && dist < 30.5 && Math.random() < 0.85) {
+    const cnt = clamp(2 + Math.floor(n / 3) - (Math.random() < 0.3 ? 1 : 0), 2, 5);
+    const side = Math.abs(spot.x) > 1.5 ? Math.sign(spot.x) : (Math.random() < 0.5 ? -1 : 1);
+    const qx = side * GOAL_HW * 0.82, qz = 0;
+    let dx = qx - spot.x, dz = qz - spot.z; const l = Math.hypot(dx, dz); dx /= l; dz /= l;
+    const wx = spot.x + dx * 9.15, wz = spot.z + dz * 9.15;
+    let px = -dz, pz = dx; if (px * side < 0) { px = -px; pz = -pz; }
+    for (let i = 0; i < cnt; i++) {
+      const o = 0.32 - i * 0.5;
+      wall.push({ type: 'std', x: wx + px * o, z: wz + pz * o, y: 0, vy: 0, jumpAt: 0.07 + rnd(0, 0.07), jv: rnd(2.7, 3.4), jumped: false, skin: SKINS[(Math.random() * 4) | 0], hair: Math.random() < 0.25 ? C.gold : C.hair });
+    }
+    wall.side = side;
+    // a defender who breaks out of the wall towards the ball
+    if (n >= 5 && wall.length >= 2 && Math.random() < 0.42) { const m = wall[wall.length - 1]; m.type = 'charge'; m.cdx = -dx; m.cdz = -dz; m.speed = rnd(5.5, 7); m.runT = 0; m.runMax = 0.6; m.jumpAt = 0.03; }
+    // a defender lying down behind the wall so nothing sneaks under
+    if (n >= 6 && Math.random() < 0.45) {
+      const cxw = wx + px * (0.32 - (cnt - 1) * 0.25), czw = wz + pz * (0.32 - (cnt - 1) * 0.25);
+      wall.push({ type: 'lie', x: cxw + dx * 0.75, z: czw + dz * 0.75, y: 0, vy: 0, px, pz, jumpAt: 99, jv: 0, jumped: true, skin: SKINS[(Math.random() * 4) | 0], hair: C.hair });
+    }
+  }
+  if (kind === 'rodando' && n >= 5) {
+    const d = kick.dir, gx = -spot.x, gz = -spot.z, gl = Math.hypot(gx, gz);
+    wall.push({ type: 'charge', track: true, x: spot.x + gx / gl * 9 + (gz / gl) * (Math.random() < 0.5 ? -1 : 1) * rnd(2, 3), z: spot.z + gz / gl * 9 - (gx / gl) * 0, y: 0, vy: 0, jumpAt: 0.0, speed: rnd(5, 6.5), runT: 0, runMax: 0.7, cdx: 0, cdz: 0, jumped: true, skin: SKINS[(Math.random() * 4) | 0], hair: C.hair });
+  }
+  wallKit = WKITS[(Math.random() * WKITS.length) | 0];
+  for (const m of wall) dress(m);
+  // keeper: skill grows with goals, personality changes the way he plays
+  const prevType = K.type;
+  let kt = 'gato';
+  if (n >= 3) { const ks = ['gato', 'libero', 'gigante', 'adivino', 'pulpo']; kt = ks[(Math.random() * ks.length) | 0]; if (kt === 'libero' && (kind === 'corner' || kind === 'escorada')) kt = 'gato'; }
+  const T = KTYPES[kt]; K.type = T; K.s = T.s; K.reach = T.reach; K.z = T.z;
+  const s = Math.min(1, n / 24);
+  K.p = { tau: 0.42 - 0.2 * s + T.react, vmax: (3.3 + 1.35 * s) * T.speed, vy: (3.1 + 0.9 * s) * T.jump * Math.sqrt(T.s), err: (1.05 - 0.62 * s) * T.err, catchV: (10 + 5 * s) * T.catch };
+  K.gambleAt = Math.random() < T.gamble ? K.p.tau * 0.55 : -1;
+  K.gside = kt === 'adivino' ? (Math.random() < 0.85 ? adivinoSide : -adivinoSide) : (Math.random() < 0.5 ? -1 : 1);
+  // wind
+  if (n >= 4) { const m = Math.min(6, 1 + (n - 4) * 0.33) * rnd(0.45, 1), a = rnd(0, Math.PI * 2); wind.x = Math.cos(a) * m; wind.z = Math.sin(a) * m; }
+  else { wind.x = 0; wind.z = 0; }
+  // golden target
+  target = null;
+  if (n >= 2 && Math.random() < 0.32) target = { x: (Math.random() < 0.5 ? -1 : 1) * (GOAL_HW - 0.6), y: Math.random() < 0.6 ? GOAL_H - 0.55 : 0.55, r: 0.45 };
+  placeBall();
+  if (kind === 'rodando') { ball.x = kick.start.x; ball.z = kick.start.z; }
+  keeperReset();
+  Object.assign(camFrom, cam);
+  setCamFor(spot);
+  // announce special kicks and new goalkeepers
+  if (kind !== 'falta') showMsg(KINDS[kind].name, [KINDS[kind].sub, T !== prevType || first ? T.name : ''].filter(Boolean), 'info');
+  else if (T !== prevType && !first) showMsg(T.name, [T.desc], 'info');
+  $('kname').textContent = T.name; $('kname').style.borderLeftColor = 'rgb(' + T.jersey.join(',') + ')';
+  transT = first ? 1 : 0;
+  if (first) Object.assign(cam, camBase);
+  flight = null; trail.length = 0;
+  state = first ? 'aim' : 'trans';
+  if (first) onAimStart();
+  updateHUD();
+  $('hint').hidden = shots >= 2;
+  if (pending) closeContact();
+  sling = null;
+}
+function onAimStart() {
+  if (kick.kind === 'rodando' && !kick.started) {
+    kick.started = true;
+    ball.vx = kick.dir.x * kick.speed; ball.vz = kick.dir.z * kick.speed; ball.live = true; ball.t = 0;
+  }
+}
+function startGame() {
+  audioInit(); sWhistle();
+  adivinoSide = Math.random() < 0.5 ? -1 : 1;
+  K.type = null;
+  score = 0; lives = 3; streak = 0; goals = 0; bestStreak = 0; shots = 0;
+  $('title').hidden = true; $('over').hidden = true;
+  newKick(true);
+}
+function finishGoal() {
+  const f = flight; f.outcome = 'goal';
+  const bon = [];
+  const base = 100 + Math.round(Math.max(0, f.dist - 16) * 10);
+  if (Math.abs(f.crossX) > GOAL_HW - 0.75 && f.crossY > GOAL_H - 0.65) bon.push(['ESCUADRA', 200]);
+  if (f.post) bon.push([f.bar ? 'LARGUERO Y DENTRO' : 'PALO Y DENTRO', 150]);
+  if (f.keeper) bon.push(['SE LE ESCAPA', 100]);
+  if (f.nutmeg) bon.push(['¡CAÑO!', 250]);
+  if (f.under) bon.push(['POR DEBAJO DE LA BARRERA', 200]);
+  if (Math.abs(f.wy0) > 42) bon.push(['ROSCA', 120]);
+  if (f.v0 >= 31.5) bon.push(['MISIL', 120]);
+  if (f.knuckle && f.v0 < 31.5) bon.push(['BALA LOCA', 120]);
+  if (f.v0 < 19.5 && f.crossY > 1.3) bon.push(['VASELINA', 150]);
+  if (f.kind === 'corner') bon.push(['GOL OLÍMPICO', 500]);
+  if (f.kind === 'rodando') bon.push(['PRIMER TOQUE', 150]);
+  if (f.kind === 'escorada' && Math.abs(kickPos.x) > 20) bon.push(['ÁNGULO IMPOSIBLE', 200]);
+  if (f.target) {
+    if (lives < 3) { lives++; bon.push(['+1 BALÓN', 300]); gainBall = true; }
+    else bon.push(['DIANA', 400]);
+  }
+  goals++; streak++; bestStreak = Math.max(bestStreak, streak);
+  const mult = Math.min(streak, 10);
+  const total = (base + bon.reduce((a, b) => a + b[1], 0)) * mult;
+  score += total;
+  const main = bon.length >= 3 ? '¡LOCURA!' : bon.length ? '¡GOLAZO!' : '¡GOL!';
+  const subs = bon.map(b => b[0]);
+  subs.push('+' + total.toLocaleString('es-ES') + (mult > 1 ? '  (x' + mult + ')' : ''));
+  showMsg(main, subs, 'goal');
+  celebrate = 3; flash = 0.35; shake = Math.max(shake, 0.5);
+  sRoar(); buzz([30, 40, 60]);
+  confetti();
+  // the crowd's reaction depends on the goal
+  const names = bon.map(b => b[0]);
+  cel.scarves = 3.4;
+  if (names.includes('ESCUADRA') || names.includes('GOL OLÍMPICO') || bon.length >= 3) { cel.flares = 3.2; cel.flareSrc = Array.from({ length: 6 }, () => [rnd(-26, 26), rnd(2.5, 7), rnd(-13, -24)]); }
+  if (bon.length >= 2 || names.some(nm => ['ROSCA', 'MISIL', 'GOL OLÍMPICO', 'VASELINA', '¡CAÑO!'].includes(nm))) { cel.fireworks = 2.8; cel.fwNext = 0; }
+  if (streak >= 3) { cel.wave = 4.5; cel.waveStart = realT; }
+  state = 'result'; resultT = 0;
+  updateHUD(true);
+}
+let gainBall = false;
+function finishFail(label) {
+  const f = flight; if (f.outcome) return; f.outcome = 'miss';
+  lives--; streak = 0;
+  showMsg(label, lives > 0 ? [lives === 1 ? 'ÚLTIMO BALÓN' : lives + ' BALONES'] : ['SIN BALONES'], 'fail');
+  sOoh(); buzz(60);
+  state = 'result'; resultT = 0;
+  updateHUD();
+}
+function failLabel() {
+  const f = flight;
+  if (f.last === 'keeper') return '¡PARADÓN!';
+  if (f.last === 'wall') return 'BARRERA';
+  if (f.last === 'post') return f.bar ? '¡LARGUERO!' : '¡AL PALO!';
+  return 'CORTO';
+}
+function checkOutcome() {
+  const f = flight; if (!f || f.outcome) return;
+  const b = ball;
+  if (f.goal) return finishGoal();
+  if (b.held) return finishFail('¡ATRAPADA!');
+  if (f.crossedOut) {
+    f.outT += STEP;
+    if (f.outT > 0.22) finishFail(f.sideNet ? 'RED LATERAL' : f.post ? (f.bar ? '¡LARGUERO!' : '¡AL PALO!') : f.crossY > GOAL_H ? 'POR ARRIBA' : 'FUERA');
+    return;
+  }
+  const sp = Math.hypot(b.vx, b.vy, b.vz);
+  if (b.vz > 0.3 && b.z > 0.25 && (f.keeper || f.wall || f.post)) { f.awayT += STEP; if (f.awayT > 0.35) finishFail(failLabel()); return; }
+  f.awayT = 0;
+  if (b.t > 4.5 || (sp < 0.6 && b.y <= R + 0.02)) finishFail(failLabel());
+}
+function gameOver() {
+  state = 'over';
+  const rec = score > best && score > 0;
+  if (rec) { best = score; try { localStorage.setItem('golazo-best', String(best)); } catch (e) { } }
+  $('oScore').textContent = score.toLocaleString('es-ES');
+  $('oGoals').textContent = goals; $('oStreak').textContent = bestStreak; $('oBest').textContent = best.toLocaleString('es-ES');
+  $('rec').hidden = !rec;
+  $('over').hidden = false;
+  $('oBoard').hidden = !NET.enabled;
+  lastGame = { score, goals, streak: bestStreak, at: Date.now(), status: 'idle', sent: false };
+  updateHUD();
+  submitLast();
+}
+
+/* ---------------- HUD ---------------- */
+let lastMult = 0;
+function updateHUD(goal) {
+  $('score').textContent = score.toLocaleString('es-ES');
+  const m = $('mult');
+  if (streak > 0) { m.className = ''; m.textContent = 'RACHA x' + Math.min(streak, 10); if (goal && streak !== lastMult) { void m.offsetWidth; m.className = 'bump'; } }
+  else { m.className = 'off'; m.textContent = 'RACHA 0'; }
+  lastMult = streak;
+  const bs = $('balls').children;
+  for (let i = 0; i < 3; i++) { bs[i].className = 'b' + (i < lives ? '' : ' lost') + (gainBall && i === lives - 1 ? ' gain' : ''); }
+  gainBall = false;
+  $('best').textContent = 'MEJOR ' + Math.max(best, score).toLocaleString('es-ES');
+  $('tbest').textContent = 'RÉCORD ' + best.toLocaleString('es-ES');
+  $('dist').textContent = Math.round(Math.hypot(spot.x, spot.z)) + ' M';
+  const wm = Math.hypot(wind.x, wind.z);
+  $('wind').hidden = wm < 0.1;
+}
+function updateWindArrow() {
+  const wm = Math.hypot(wind.x, wind.z); if (wm < 0.1) return;
+  const wr = wind.x * rxv + wind.z * rzv, wf = wind.x * fx + wind.z * fz;
+  $('warr').style.transform = 'rotate(' + (Math.atan2(wr, wf) * 180 / Math.PI).toFixed(1) + 'deg)';
+  $('wtxt').textContent = 'VIENTO ' + wm.toFixed(1) + ' m/s';
+}
+function showMsg(main, subs, cls) {
+  const mm = $('msgMain'), ms = $('msgSub');
+  mm.className = ''; mm.textContent = main; void mm.offsetWidth; mm.className = cls + ' show';
+  ms.innerHTML = '';
+  subs.forEach((s, i) => {
+    const e = document.createElement('span'); e.textContent = s;
+    if (s.startsWith('+') && i === subs.length - 1 && cls === 'goal') e.classList.add('pts');
+    e.style.animationDelay = (0.12 + i * 0.09) + 's'; e.classList.add('show'); ms.appendChild(e);
+  });
+}
+
+/* ---------------- particles ---------------- */
+function spawnBurst(x, y, z, n, col, sp) {
+  for (let i = 0; i < n; i++) particles.push({ x, y, z, vx: rnd(-1, 1) * sp, vy: rnd(0.3, 1.4) * sp, vz: rnd(-1, 1) * sp, life: rnd(0.3, 0.7), c: PK(col), drag: 1.5, g: 1 });
+}
+function confetti() {
+  for (let i = 0; i < 90; i++) {
+    const col = PK([C.gold, C.mint, C.coral, C.cream, [130, 96, 196]][(Math.random() * 5) | 0]);
+    particles.push({ x: rnd(-8, 8), y: rnd(4, 9), z: rnd(-4, 3), vx: rnd(-1.5, 1.5), vy: rnd(-0.5, 2), vz: rnd(-1, 1), life: rnd(1.8, 3.2), c: col, drag: 2.5, g: 0.18, flick: true });
+  }
+}
+function burstFirework(x, y, z) {
+  const pal = [[255, 200, 74], [124, 240, 200], [255, 102, 80], [190, 150, 255], [255, 246, 220]], c1 = pal[(Math.random() * 5) | 0], c2 = pal[(Math.random() * 5) | 0];
+  for (let i = 0; i < 46; i++) {
+    const a = rnd(0, Math.PI * 2), e = Math.acos(rnd(-1, 1)), sp = rnd(7, 11);
+    particles.push({ x, y, z, vx: Math.sin(e) * Math.cos(a) * sp, vy: Math.cos(e) * sp, vz: Math.sin(e) * Math.sin(a) * sp, life: rnd(0.9, 1.5), c: PK(i & 1 ? c1 : c2), rgb: i & 1 ? c1 : c2, drag: 1.3, g: 0.22, glow: true, flick: true });
+  }
+  sThud(3, 45);
+}
+function updParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i]; p.life -= dt;
+    if (p.life <= 0) { if (p.rocket) burstFirework(p.x, p.y, p.z); particles.splice(i, 1); continue; }
+    const d = Math.exp(-p.drag * dt); p.vx *= d; p.vz *= d; p.vy = p.vy * d - G * p.g * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.y < 0.01) { p.y = 0.01; p.vy *= -0.2; p.vx *= 0.6; p.vz *= 0.6; }
+  }
+}
+
+/* ---------------- raster helpers ---------------- */
+function pset(x, y, c) { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; }
+function blendp(x, y, r, g, b, a) {
+  x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H) return;
+  const i = y * W + x, c = buf[i], cr = c & 255, cg = (c >> 8) & 255, cb = (c >> 16) & 255;
+  buf[i] = ((255 << 24) | ((cb + (b - cb) * a) << 16) | ((cg + (g - cg) * a) << 8) | (cr + (r - cr) * a)) >>> 0;
+}
+function cap(x1, y1, x2, y2, r, c) {
+  r = Math.max(r, 0.6);
+  const x0 = Math.max(0, Math.floor(Math.min(x1, x2) - r)), xe = Math.min(W - 1, Math.ceil(Math.max(x1, x2) + r));
+  const y0 = Math.max(0, Math.floor(Math.min(y1, y2) - r)), ye = Math.min(H - 1, Math.ceil(Math.max(y1, y2) + r));
+  const dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy || 1e-6, rr = r * r;
+  for (let y = y0; y <= ye; y++) for (let x = x0; x <= xe; x++) {
+    const px = x + 0.5 - x1, py = y + 0.5 - y1; let t = (px * dx + py * dy) / L; t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const ex = px - t * dx, ey = py - t * dy; if (ex * ex + ey * ey <= rr) buf[y * W + x] = c;
+  }
+}
+function lineB(x0, y0, x1, y1, col, a) {
+  x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy, n = 0;
+  while (n++ < 900) { blendp(x0, y0, col[0], col[1], col[2], a); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } }
+}
+
+/* ---------------- world render ---------------- */
+function renderWorld() {
+  const t = realT;
+  fx = Math.sin(cam.yaw); fz = -Math.cos(cam.yaw); rxv = Math.cos(cam.yaw); rzv = Math.sin(cam.yaw);
+  for (let sx = 0; sx < W; sx++) {
+    const k = (sx + 0.5 - cx) / F, dx = fx + rxv * k, dz = fz + rzv * k;
+    let tt = 1e6, u = 0, q;
+    if (dz < -1e-6) { q = (-6 - cam.z) / dz; if (q > 0 && q < tt) { tt = q; u = cam.x + dx * q; } }
+    if (dz > 1e-6) { q = (75 - cam.z) / dz; if (q > 0 && q < tt) { tt = q; u = -(cam.x + dx * q); } }
+    if (dx > 1e-6) { q = (40 - cam.x) / dx; if (q > 0 && q < tt) { tt = q; u = 40 + cam.z + dz * q; } }
+    if (dx < -1e-6) { q = (-40 - cam.x) / dx; if (q > 0 && q < tt) { tt = q; u = -40 - cam.z - dz * q; } }
+    colT[sx] = tt; colU[sx] = u;
+    bBot[sx] = hz + F * cam.y / tt; bTop[sx] = hz - F * (0.9 - cam.y) / tt; sTop[sx] = hz - F * (10 - cam.y) / (tt + 30);
+    cAng[sx] = cam.yaw + Math.atan(k);
+  }
+  const g1 = C.grassA, g2 = C.grassB, go = C.grassOut, hzc = C.haze, ln = C.line, dirt = C.dirt;
+  const jump = celebrate > 0, scarfOn = cel.scarves > 0, waveOn = cel.wave > 0;
+  const waveF = cam.yaw - 0.95 + ((t - cel.waveStart) * 0.85) % 1.9;
+  const L4 = BOARD_BITS.length * 4;
+  const scroll = t * 3.2;
+  for (let sy = 0; sy < H; sy++) {
+    const row = sy * W, below = sy + 0.5 - hz;
+    let zc = 0, bx = 0, bz = 0, stx = 0, stz = 0, tz = 0, tx = 0, fog = 0;
+    if (below > 0.3) {
+      zc = F * cam.y / below; const s = zc / F;
+      bx = cam.x + fx * zc + rxv * s * (0.5 - cx); bz = cam.z + fz * zc + rzv * s * (0.5 - cx);
+      stx = rxv * s; stz = rzv * s;
+      tz = Math.max(0.06, zc * zc / (F * cam.y) * 0.55); tx = Math.max(0.06, s * 0.6);
+      fog = clamp((zc - 14) / 75, 0, 0.6);
+    }
+    const vy = (sy - H * 0.55) / H;
+    for (let sx = 0; sx < W; sx++) {
+      const bay = BAY[((sy & 3) << 2) | (sx & 3)];
+      let r, g, b;
+      if (below > 0.3 && sy >= bBot[sx]) {
+        const wx = bx + stx * sx, wz = bz + stz * sx, ax = wx < 0 ? -wx : wx;
+        let line = false, base;
+        if (ax < 34 && wz > -3 && wz < 105) {
+          base = ((Math.floor((wz + 300) / 5.25) & 1) ? g1 : g2);
+          const ck = (Math.floor((wx + 300) / 5.25) & 1) ? 5 : 0;
+          r = base[0] + ck * 0.4; g = base[1] + ck; b = base[2] + ck * 0.3;
+          if (wz > -0.5) {
+            if (Math.abs(wz) < tz) line = true;
+            else if (Math.abs(ax - 34) < tx + 0.06) line = true;
+            else if (wz < 5.5 + tz && ((Math.abs(wz - 5.5) < tz && ax < 9.16) || (Math.abs(ax - 9.16) < tx && wz < 5.5))) line = true;
+            else if (wz < 16.5 + tz && ((Math.abs(wz - 16.5) < tz && ax < 20.16) || (Math.abs(ax - 20.16) < tx && wz < 16.5))) line = true;
+            else { const d2 = wx * wx + (wz - 11) * (wz - 11); if (d2 < Math.max(0.02, tx * tx * 1.6)) line = true; else if (wz > 16.5) { const d = Math.sqrt(d2); if (Math.abs(d - 9.15) < (tz + tx) * 0.5) line = true; } }
+            if (!line && Math.abs(wz - 52.5) < tz) line = true;
+            // worn goalmouth
+            if (!line) { const w = (wx * wx) / 9 + (wz - 1.6) * (wz - 1.6) / 2.2; if (w < 1) { const a = (1 - w) * 0.45; const q = Math.floor(a * 4 + bay) / 4; r = lerp(r, dirt[0], q); g = lerp(g, dirt[1], q); b = lerp(b, dirt[2], q); } }
+          }
+          if (line) { r = ln[0]; g = ln[1]; b = ln[2]; }
+        } else { r = go[0]; g = go[1]; b = go[2]; }
+        if (fog > 0) { const q = Math.floor(fog * 5 + bay) / 5; r = lerp(r, hzc[0], q); g = lerp(g, hzc[1], q); b = lerp(b, hzc[2], q); }
+        const vx = (sx - cx) / W, vg = vx * vx * 1.5 + vy * vy * 1.1, dk = Math.floor(clamp(vg * 1.1, 0, 0.5) * 6 + bay) / 6, mm = 1 - dk;
+        r *= mm; g *= mm; b *= mm;
+      } else if (sy >= bTop[sx]) {
+        const bt = bTop[sx], bb = bBot[sx], v = (sy + 0.5 - bt) / Math.max(0.5, bb - bt);
+        const fr = Math.floor((v - 0.16) / 0.68 * 5);
+        let on = false, ci = 0;
+        if (fr >= 0 && fr < 5) {
+          const c = Math.floor((colU[sx] + scroll) / 0.3); const cc = ((c % L4) + L4) % L4;
+          ci = (cc / 4) | 0; const fc = cc - ci * 4;
+          if (fc < 3) on = BOARD_BITS[ci].charCodeAt(fr * 3 + fc) === 49;
+        }
+        if (on) { const col = LEDC[BOARD_COL[ci]]; r = col[0]; g = col[1]; b = col[2]; }
+        else { const dim = ((sx + sy) & 1) ? C.board : C.boardDim; r = dim[0]; g = dim[1]; b = dim[2]; }
+        if (v < 0.08 || v > 0.94) { r = 8; g = 7; b = 16; }
+      } else if (sy >= sTop[sx]) {
+        const bt = bTop[sx], st = sTop[sx];
+        let yy = sy;
+        const ang = cAng[sx], u = Math.floor(ang * F * 0.5), sub = Math.floor(ang * F) & 1;
+        if (jump && hash(u, 7) > 0.35) yy += ((Math.sin(t * 16 + u * 0.7) > 0) ? 1 : 0);
+        let inWave = false;
+        if (waveOn) { const da = ang - waveF; if (da > -0.09 && da < 0.09) { yy += 2; inWave = true; } }
+        const rr = Math.floor((bt - yy) / 2), suby = Math.floor(bt - yy) & 1;
+        const h = hash(u, rr);
+        const lit = 0.5 + 0.5 * clamp(1 - (bt - sy) / Math.max(1, bt - st), 0, 1);
+        if (sy < st + 2) { r = C.rim[0]; g = C.rim[1]; b = C.rim[2]; }
+        else if (h < 0.16 || rr < 0) { r = C.stand[0]; g = C.stand[1]; b = C.stand[2]; if (suby) { r += 6; g += 6; b += 10; } }
+        else {
+          let col = (suby === 1 && sub === 0) ? SKINS[(hash(u, rr + 99) * 4) | 0] : CROWD[(h * 997 | 0) % CROWD.length];
+          if (scarfOn && rr % 3 === 0 && hash(u, rr + 3) > 0.3) col = ((((u >> 1) + (Math.sin(t * 9 + u * 0.35) > 0 ? 1 : 0)) & 1) ? C.gold : C.coral);
+          if (inWave && suby === 1) col = C.cream;
+          const flick = jump && hash(u, rr + 5) > 0.7 && Math.sin(t * 20 + u) > 0.6 ? 1.3 : 1;
+          const tier = (Math.floor(rr / 6) & 1) ? 0.78 : 1, k = lit * flick * tier * 0.82;
+          r = (col[0] * 0.7 + C.stand[0] * 0.3) * k; g = (col[1] * 0.7 + C.stand[1] * 0.3) * k; b = (col[2] * 0.7 + C.stand[2] * 0.3) * k;
+          if (suby === 0 && sub === 1) { r *= 0.6; g *= 0.6; b *= 0.6; }
+        }
+      } else {
+        const tt = clamp(sy / Math.max(1, hz - F * 0.05), 0, 1), q = Math.floor(tt * 9 + bay) / 9;
+        r = lerp(C.skyTop[0], C.skyHor[0], q); g = lerp(C.skyTop[1], C.skyHor[1], q); b = lerp(C.skyTop[2], C.skyHor[2], q);
+      }
+      buf[row + sx] = ((255 << 24) | ((b > 255 ? 255 : b) << 16) | ((g > 255 ? 255 : g) << 8) | (r > 255 ? 255 : r)) >>> 0;
+    }
+  }
+  // stars
+  for (const s of STARS) {
+    let rel = s.a - cam.yaw; rel = Math.atan2(Math.sin(rel), Math.cos(rel)); if (Math.abs(rel) > 1.2) continue;
+    const sx = Math.round(cx + F * Math.tan(rel)), sy = Math.round(hz - F * Math.tan(s.e));
+    if (sx < 0 || sx >= W || sy < 0 || sy >= sTop[sx] - 2) continue;
+    const tw = s.b * (0.6 + 0.4 * Math.sin(t * 2 + s.p));
+    blendp(sx, sy, 255, 244, 220, tw * 0.8);
+  }
+  // floodlights
+  for (const l of LIGHTS) {
+    if (!proj(l[0], l[1], l[2], PP)) continue;
+    const px = PP.x, py = PP.y, sc = F / PP.z;
+    const gr = clamp(sc * 9, 7, 34);
+    if (px < -gr || px > W + gr) continue;
+    for (let y = Math.floor(py - gr); y <= py + gr; y++) for (let x = Math.floor(px - gr); x <= px + gr; x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const d = Math.hypot(x - px, (y - py) * 1.1) / gr; if (d > 1) continue;
+      const a = (1 - d) * (1 - d) * 0.6, q = Math.floor(a * 5 + BAY[((y & 3) << 2) | (x & 3)]) / 5;
+      if (q > 0) blendp(x, y, C.glow[0], C.glow[1], C.glow[2], q);
+    }
+    // pole
+    const bw = Math.max(2, sc * 3.6), bh = Math.max(1, sc * 1.6);
+    for (let y = Math.round(py + bh); y < H; y++) { const xi = Math.round(px); if (xi < 0 || xi >= W || y >= sTop[xi]) break; pset(xi, y, INK); if (sc > 0.18) pset(xi + 1, y, INK); }
+    for (let y = Math.round(py - bh); y <= py + bh; y++) for (let x = Math.round(px - bw / 2); x <= px + bw / 2; x++) pset(x, y, ((x + y) & 1) ? PK([255, 250, 228]) : PK([255, 226, 160]));
+  }
+}
+
+/* ---------------- objects ---------------- */
+const P1 = { x: 0, y: 0, z: 0 }, P2 = { x: 0, y: 0, z: 0 };
+function capW(a, b, rM, c, z) {
+  if (!proj(a[0], a[1], z, P1) || !proj(b[0], b[1], z, P2)) return;
+  cap(P1.x, P1.y, P2.x, P2.y, rM * F / ((P1.z + P2.z) / 2), c);
+}
+/* ---------------- figures: shaded pixel-art bodies ---------------- */
+const TONES = new Map();
+function tones(rgb) {
+  const key = rgb[0] * 65536 + rgb[1] * 256 + rgb[2];
+  let t = TONES.get(key); if (t) return t;
+  // highlights warm up toward the floodlights, shadows lean toward the night's plum
+  const hi = [rgb[0] + (255 - rgb[0]) * 0.42 + 8, rgb[1] + (246 - rgb[1]) * 0.36 + 4, rgb[2] + (222 - rgb[2]) * 0.26].map(v => clamp(Math.round(v), 0, 255));
+  const lo = [rgb[0] * 0.56 + 22 * 0.44, rgb[1] * 0.52 + 14 * 0.48, rgb[2] * 0.6 + 58 * 0.4].map(v => clamp(Math.round(v), 0, 255));
+  t = [PK(hi), PK(rgb), PK(lo)]; TONES.set(key, t); return t;
+}
+const SL = (() => { const v = [-0.52, -0.58, 0.62], l = Math.hypot(...v); return v.map(c => c / l); })();
+function capS(x1, y1, r1, x2, y2, r2, pal, pat) {
+  r1 = Math.max(r1, 0.6); r2 = Math.max(r2, 0.6);
+  const rm = Math.max(r1, r2);
+  const x0 = Math.max(0, Math.floor(Math.min(x1, x2) - rm)), xe = Math.min(W - 1, Math.ceil(Math.max(x1, x2) + rm));
+  const y0 = Math.max(0, Math.floor(Math.min(y1, y2) - rm)), ye = Math.min(H - 1, Math.ceil(Math.max(y1, y2) + rm));
+  const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy, len = Math.sqrt(L2);
+  const ux = len > 1e-3 ? -dy / len : 1, uy = len > 1e-3 ? dx / len : 0;
+  const flat = typeof pal === 'number', shade = !flat && rm >= 1.25;
+  for (let y = y0; y <= ye; y++) for (let x = x0; x <= xe; x++) {
+    const px = x + 0.5 - x1, py = y + 0.5 - y1;
+    let t = L2 > 1e-6 ? (px * dx + py * dy) / L2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const r = r1 + (r2 - r1) * t, ex = px - t * dx, ey = py - t * dy;
+    if (ex * ex + ey * ey > r * r) continue;
+    const i = y * W + x;
+    if (flat) { buf[i] = pal; continue; }
+    let P = pal;
+    if (pat) {
+      const sv = (ex * ux + ey * uy) / r; let alt = false;
+      switch (pat.k) {
+        case 'stripes': alt = (Math.floor((sv + 1) * pat.n) & 1) === 1; break;
+        case 'hoops': alt = (Math.floor(t * pat.n) & 1) === 1; break;
+        case 'panel': alt = Math.abs(sv) < pat.w; break;
+        case 'sides': alt = Math.abs(sv) > pat.w; break;
+        case 'half': alt = sv < 0; break;
+      }
+      if (alt) P = pat.alt;
+    }
+    if (!shade) { buf[i] = P[1]; continue; }
+    const nx = ex / r, ny = ey / r, nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+    const I = 0.14 + 0.92 * Math.max(0, nx * SL[0] + ny * SL[1] + nz * SL[2]) + (BAY[((y & 3) << 2) | (x & 3)] - 0.5) * 0.09;
+    buf[i] = I > 0.84 ? P[0] : I > 0.42 ? P[1] : P[2];
+  }
+}
+// parts: [a(xyz), b(xyz), r1 m, r2 m, palette, pattern?, noOutline?]
+const PA = { x: 0, y: 0, z: 0 }, PB = { x: 0, y: 0, z: 0 }, PRJ = [];
+function figure(parts) {
+  PRJ.length = 0;
+  for (const p of parts) {
+    if (!proj(p[0][0], p[0][1], p[0][2], PA) || !proj(p[1][0], p[1][1], p[1][2], PB)) { PRJ.push(null); continue; }
+    const k = F / ((PA.z + PB.z) / 2);
+    PRJ.push([PA.x, PA.y, PB.x, PB.y, p[2] * k, p[3] * k]);
+  }
+  for (let i = 0; i < parts.length; i++) { const q = PRJ[i]; if (q && !parts[i][6]) capS(q[0], q[1], q[4] + 1, q[2], q[3], q[5] + 1, INK); }
+  for (let i = 0; i < parts.length; i++) { const q = PRJ[i]; if (q) capS(q[0], q[1], q[4], q[2], q[3], q[5], parts[i][4], parts[i][5]); }
+}
+const l3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+// a head in its own frame: Hf(X, Y) maps face-left/right and up into the world
+function pushHead(parts, Hf, lk, back) {
+  const st = lk.style, hair = tones(lk.hair), skin = tones(lk.skin);
+  if (back) { if (st === 'long') parts.push([Hf(0, 0.02), Hf(0, -0.22), 0.13, 0.1, hair]); return; }
+  if (st === 'afro') parts.push([Hf(0, 0.04), Hf(0, 0.04), 0.155, 0.155, hair]);
+  else if (st === 'short' || st === 'band' || st === 'bun' || st === 'long') parts.push([Hf(0, 0.024), Hf(0, 0.024), 0.122, 0.122, hair]);
+  else if (st === 'buzz') parts.push([Hf(0, 0.012), Hf(0, 0.012), 0.118, 0.118, hair]);
+  else if (st === 'cap') parts.push([Hf(0, 0.028), Hf(0, 0.028), 0.124, 0.124, tones(lk.capC)]);
+  if (st === 'bun') parts.push([Hf(0, 0.155), Hf(0, 0.155), 0.052, 0.052, hair]);
+  if (st === 'mohawk') parts.push([Hf(0, 0.05), Hf(0, 0.155), 0.04, 0.032, hair]);
+  const bare = st === 'bald' || st === 'mohawk';
+  parts.push([Hf(0, bare ? 0 : -0.016), Hf(0, bare ? -0.004 : -0.02), bare ? 0.116 : 0.1, bare ? 0.114 : 0.1, skin]);
+  if (lk.beard) parts.push([Hf(-0.05, -0.066), Hf(0.05, -0.066), 0.045, 0.045, hair, null, true]);
+  if (st === 'cap') parts.push([Hf(-0.105, 0.032), Hf(0.105, 0.032), 0.03, 0.03, tones(lk.capC)]);
+  if (st === 'band') parts.push([Hf(-0.105, 0.048), Hf(0.105, 0.048), 0.024, 0.024, tones(lk.bandC), null, true]);
+}
+function faceDetail(Hf, lk) {
+  const c = Hf(0, 0); if (!proj(c[0], c[1], c[2], PP)) return;
+  const rp = 0.1 * F / PP.z; if (rp < 1.7) return;
+  const brow = tones(lk.hair)[2];
+  for (const sd of [-1, 1]) {
+    const e = Hf(sd * 0.043, -0.008);
+    if (proj(e[0], e[1], e[2], PP)) pset(PP.x, PP.y, INK);
+    if (rp >= 3 && lk.style !== 'cap' && lk.style !== 'band') { const b = Hf(sd * 0.046, 0.03); if (proj(b[0], b[1], b[2], PP)) { pset(PP.x, PP.y, brow); pset(PP.x + (sd > 0 ? 1 : -1), PP.y, brow); } }
+  }
+  if (rp >= 3.4 && !lk.beard) { const m = Hf(0, -0.058); if (proj(m[0], m[1], m[2], PP)) pset(PP.x, PP.y, tones(lk.skin)[2]); }
+}
+function drawKeeper() {
+  const J = keeperJoints(KJ), z = K.z, T = K.type, S = K.s, sn = Math.sin(K.th), cs = Math.cos(K.th);
+  if (!proj(K.x, K.y, z, PP)) return;
+  const w = p => [p[0], p[1], z];
+  const R = (o, X, Y) => [o[0] + (cs * X + sn * Y) * S, o[1] + (-sn * X + cs * Y) * S, z];
+  const Hf = (X, Y) => R(J.head, X, Y);
+  const jer = tones(T.jersey), alt = tones(T.alt), sho = tones(T.shorts), glo = tones(T.glove), skin = tones(T.look.skin), sock = tones(T.sock), boot = tones([30, 28, 44]), white = tones([246, 244, 236]);
+  const pat = Object.assign({ alt }, T.pat);
+  const hip = l3(w(J.hipL), w(J.hipR), 0.5), neck = w(J.neck);
+  const parts = [];
+  pushHead(parts, Hf, T.look, true);
+  for (const sd of [-1, 1]) {
+    const hp = w(sd < 0 ? J.hipL : J.hipR), kn = w(sd < 0 ? J.kneeL : J.kneeR), ft = w(sd < 0 ? J.footL : J.footR);
+    parts.push([kn, l3(kn, ft, 0.94), 0.07 * S, 0.048 * S, sock]);
+    parts.push([l3(kn, ft, 0.17), l3(kn, ft, 0.27), 0.072 * S, 0.07 * S, alt]);
+    parts.push([hp, kn, 0.095 * S, 0.066 * S, skin]);
+    parts.push([hp, l3(hp, kn, 0.52), 0.112 * S, 0.1 * S, sho]);
+    parts.push([ft, R(ft, sd * 0.075, -0.025), 0.064 * S, 0.056 * S, boot]);
+  }
+  parts.push([w(J.hipL), w(J.hipR), 0.125 * S, 0.125 * S, sho]);
+  parts.push([hip, l3(hip, neck, 0.94), 0.15 * S, 0.19 * S, jer, pat]);
+  parts.push([w(J.shL), w(J.shR), 0.088 * S, 0.088 * S, jer]);
+  parts.push([l3(hip, neck, 0.9), neck, 0.072 * S, 0.075 * S, alt]);
+  parts.push([neck, Hf(0, -0.085), 0.052 * S, 0.052 * S, skin]);
+  pushHead(parts, Hf, T.look, false);
+  // shirt number "1"
+  const ch = l3(hip, neck, 0.56), torsoPx = 0.5 * S * F / PP.z;
+  if (torsoPx > 8) {
+    const num = tones(T.num);
+    parts.push([R(ch, 0.01, -0.07), R(ch, 0.01, 0.07), 0.022 * S, 0.022 * S, num, null, true]);
+    parts.push([R(ch, -0.035, 0.035), R(ch, 0.01, 0.07), 0.02 * S, 0.02 * S, num, null, true]);
+  }
+  for (const sd of [-1, 1]) {
+    const sh = w(sd < 0 ? J.shL : J.shR), el = w(sd < 0 ? J.elL : J.elR), ha = w(sd < 0 ? J.haL : J.haR);
+    parts.push([sh, el, 0.077 * S, 0.064 * S, jer]);
+    parts.push([el, l3(el, ha, 0.7), 0.064 * S, 0.055 * S, jer]);
+    parts.push([l3(el, ha, 0.62), l3(el, ha, 0.8), 0.066 * S, 0.066 * S, white]);
+    parts.push([l3(el, ha, 0.8), l3(el, ha, 1.17), 0.075 * S, 0.1 * S, glo]);
+  }
+  figure(parts);
+  faceDetail(Hf, T.look);
+}
+function drawWallMan(m) {
+  if (m.type === 'lie') return drawLyingMan(m);
+  const lk = m.look || DEF_LOOK, kit = wallKit, hs = lk.h, z = m.z, x = m.x;
+  if (!proj(x, 1, z, PP)) return;
+  const run = m.type === 'charge' && m.run ? Math.sin(m.run * 18) : 0, running = m.type === 'charge' && m.run > 0 && m.runT < m.runMax;
+  const bob = (m.y < 0.01 && !running) ? Math.sin(realT * 3.1 + lk.ph) * 0.016 : 0;
+  const tuck = clamp(m.y / 0.3, 0, 1);
+  const P = (X, Y, up) => [x + X, m.y + (Y + (up ? bob : 0)) * hs, z];
+  const sh = tones(kit.shirt), alt = tones(kit.alt), so = tones(kit.shorts), sk = tones(kit.socks), bd = tones(kit.band), skin = tones(lk.skin), boot = tones([30, 28, 44]), col = tones(kit.collar);
+  const pat = Object.assign({ alt }, kit.pat);
+  const Hf = (X, Y) => P(X, 1.63 + Y, 1);
+  const parts = [];
+  pushHead(parts, Hf, lk, true);
+  for (const sd of [-1, 1]) {
+    const lift = (sd < 0 ? Math.max(0, run) : Math.max(0, -run)) * (running ? 0.24 : 0);
+    const hp = P(sd * 0.11, 0.9), kn = P(sd * (0.125 + tuck * 0.05), 0.5 + tuck * 0.14 + lift * 0.5), ft = P(sd * 0.125, 0.08 + tuck * 0.3 + lift);
+    parts.push([kn, l3(kn, ft, 0.94), 0.07, 0.048, sk]);
+    parts.push([l3(kn, ft, 0.17), l3(kn, ft, 0.27), 0.072, 0.07, bd]);
+    parts.push([hp, kn, 0.097, 0.067, skin]);
+    parts.push([hp, l3(hp, kn, 0.48), 0.11, 0.1, so]);
+    parts.push([ft, [ft[0] + sd * 0.075, ft[1] - 0.025, z], 0.064, 0.056, boot]);
+  }
+  parts.push([P(-0.12, 0.9), P(0.12, 0.9), 0.123, 0.123, so]);
+  parts.push([P(0, 0.93, 1), P(0, 1.41, 1), 0.15, 0.188, sh, pat]);
+  parts.push([P(-0.19, 1.37, 1), P(0.19, 1.37, 1), 0.088, 0.088, sh]);
+  parts.push([P(0, 1.4, 1), P(0, 1.45, 1), 0.07, 0.07, col]);
+  parts.push([P(0, 1.44, 1), P(0, 1.53, 1), 0.053, 0.053, skin]);
+  pushHead(parts, Hf, lk, false);
+  for (const sd of [-1, 1]) {
+    const s0 = P(sd * 0.215, 1.36, 1);
+    let el, ha;
+    if (running) { const k = sd * run; el = P(sd * 0.29, 1.1 + k * 0.05, 1); ha = P(sd * 0.2, 1.2 + k * 0.15, 1); }
+    else { el = P(sd * 0.27, 1.1, 1); ha = P(sd * 0.045, 0.9, 1); }
+    parts.push([s0, el, 0.071, 0.06, skin]);
+    parts.push([s0, l3(s0, el, 0.48), 0.082, 0.076, sh]);
+    parts.push([el, ha, 0.058, 0.05, skin]);
+    parts.push([ha, ha, 0.062, 0.062, skin]);
+  }
+  figure(parts);
+  faceDetail(Hf, lk);
+}
+function drawLyingMan(m) {
+  if (!proj(m.x, 0.2, m.z, PP)) return;
+  const lk = m.look || DEF_LOOK, kit = wallKit, px = m.px, pz = m.pz;
+  const A = (t, h, off = 0) => [m.x + px * t - pz * off, h, m.z + pz * t + px * off];
+  const sh = tones(kit.shirt), alt = tones(kit.alt), so = tones(kit.shorts), sk = tones(kit.socks), bd = tones(kit.band), skin = tones(lk.skin), boot = tones([30, 28, 44]), col = tones(kit.collar);
+  const pat = Object.assign({ alt }, kit.pat);
+  // lying on his side along the back of the wall, facing the kicker
+  const Hf = (X, Y) => A(0.7 + Y, 0.2 - X);
+  const parts = [];
+  pushHead(parts, Hf, lk, true);
+  parts.push([A(0.42, 0.07), A(0.72, 0.06), 0.06, 0.055, skin]);
+  for (const h of [0.11, 0.23]) {
+    const hp = A(-0.08, h), kn = A(-0.5, h + (h > 0.2 ? 0.03 : 0)), ft = A(-0.93, h);
+    parts.push([kn, l3(kn, ft, 0.94), 0.068, 0.048, sk]);
+    parts.push([l3(kn, ft, 0.17), l3(kn, ft, 0.27), 0.07, 0.068, bd]);
+    parts.push([hp, kn, 0.095, 0.066, skin]);
+    parts.push([hp, l3(hp, kn, 0.48), 0.11, 0.1, so]);
+    parts.push([ft, A(-1.0, h + 0.07), 0.062, 0.055, boot]);
+  }
+  parts.push([A(-0.1, 0.17), A(-0.1, 0.17), 0.13, 0.13, so]);
+  parts.push([A(-0.06, 0.18), A(0.42, 0.2), 0.15, 0.185, sh, pat]);
+  parts.push([A(0.44, 0.2), A(0.48, 0.2), 0.07, 0.07, col]);
+  parts.push([A(0.47, 0.2), A(0.57, 0.2), 0.052, 0.052, skin]);
+  pushHead(parts, Hf, lk, false);
+  parts.push([A(0.38, 0.33), A(0.15, 0.36), 0.075, 0.065, sh]);
+  parts.push([A(0.15, 0.36), A(-0.08, 0.33), 0.058, 0.05, skin]);
+  parts.push([A(-0.1, 0.32), A(-0.1, 0.32), 0.06, 0.06, skin]);
+  figure(parts);
+  faceDetail(Hf, lk);
+}
+function drawPosts() {
+  const X = GOAL_HW + POST_R, Y = GOAL_H + POST_R, wc = PK(C.post), sc = PK(C.postShade);
+  const segs = [[[-X, 0], [-X, Y]], [[X, 0], [X, Y]], [[-X, Y], [X, Y]]];
+  for (const [a, b] of segs) capW(a, b, POST_R + 1.0 * cam.z / F * 0.9, INK, 0);
+  for (const [a, b] of segs) capW(a, b, POST_R, wc, 0);
+  // shaded side of the posts
+  for (const [a, b] of segs.slice(0, 2)) capW([a[0] + 0.03, a[1]], [b[0] + 0.03, b[1]], POST_R * 0.4, sc, 0);
+}
+function netPt(x, y, z, o) {
+  let zz = z;
+  if (z <= -NET_D + 0.01 && net.amp !== 0) { const d2 = (x - net.x) * (x - net.x) + (y - net.y) * (y - net.y); zz -= net.amp * Math.exp(-d2 / 0.9); }
+  return proj(x, y, zz, o);
+}
+function netLine(pts, a) {
+  let ok = false, lx = 0, ly = 0;
+  for (const p of pts) {
+    if (netPt(p[0], p[1], p[2], P1)) { if (ok) lineB(lx, ly, P1.x, P1.y, C.netc, a); lx = P1.x; ly = P1.y; ok = true; } else ok = false;
+  }
+}
+function drawNetBack() {
+  const a = 0.38, z = -NET_D;
+  for (let i = 0; i <= 12; i++) { const x = -GOAL_HW + i * (GOAL_HW * 2 / 12); const pts = []; for (let j = 0; j <= 6; j++) pts.push([x, j * GOAL_H / 6, z]); netLine(pts, a); }
+  for (let j = 0; j <= 6; j++) { const y = j * GOAL_H / 6; const pts = []; for (let i = 0; i <= 12; i++) pts.push([-GOAL_HW + i * (GOAL_HW * 2 / 12), y, z]); netLine(pts, a); }
+}
+function drawNetSide(sg) {
+  const a = 0.32, x = sg * GOAL_HW;
+  for (let i = 0; i <= 4; i++) { const z = -i * NET_D / 4; netLine([[x, 0, z], [x, GOAL_H, z]], a); }
+  for (let j = 0; j <= 6; j++) { const y = j * GOAL_H / 6; netLine([[x, y, 0], [x, y, -NET_D]], a); }
+}
+function drawNetRoof() {
+  const a = 0.3;
+  for (let i = 0; i <= 4; i++) { const z = -i * NET_D / 4; netLine([[-GOAL_HW, GOAL_H, z], [GOAL_HW, GOAL_H, z]], a); }
+  for (let i = 0; i <= 12; i++) { const x = -GOAL_HW + i * (GOAL_HW * 2 / 12); netLine([[x, GOAL_H, 0], [x, GOAL_H, -NET_D]], a); }
+}
+const LIGHT = (() => { const v = [-0.45, 0.8, 0.4], l = Math.hypot(...v); return v.map(c => c / l); })();
+function drawBall() {
+  const b = ball; if (!proj(b.x, b.y, b.z, PP)) return;
+  const rp = R * F / PP.z, bx = PP.x, by = PP.y;
+  if (rp < 1.15) { pset(bx, by, PK(C.white)); if (rp > 0.75) { pset(bx + 1, by, PK([200, 200, 214])); pset(bx, by + 1, PK([200, 200, 214])); } return; }
+  const m = b.m, ro = rp + 1;
+  const x0 = Math.floor(bx - ro), x1 = Math.ceil(bx + ro), y0 = Math.floor(by - ro), y1 = Math.ceil(by + ro);
+  const W0 = PK(C.white), W1 = PK([206, 206, 222]), W2 = PK([140, 138, 172]), D0 = PK([62, 58, 92]), D1 = PK([26, 22, 48]);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const nx = (x + 0.5 - bx) / rp, ny = -(y + 0.5 - by) / rp, d2 = nx * nx + ny * ny;
+    if (d2 > 1) { if (d2 < (ro / rp) * (ro / rp)) pset(x, y, INK); continue; }
+    const nz = Math.sqrt(1 - d2);
+    const wx = rxv * nx - fx * nz, wy = ny, wz = rzv * nx - fz * nz;
+    const ox = m[0] * wx + m[3] * wy + m[6] * wz, oy = m[1] * wx + m[4] * wy + m[7] * wz, oz = m[2] * wx + m[5] * wy + m[8] * wz;
+    let best = -1; for (let i = 0; i < 12; i++) { const v = ICO[i], d = ox * v[0] + oy * v[1] + oz * v[2]; if (d > best) best = d; }
+    const lam = Math.max(0, wx * LIGHT[0] + wy * LIGHT[1] + wz * LIGHT[2]);
+    const I = 0.3 + 0.75 * lam, q = Math.floor(I * 3 + BAY[((y & 3) << 2) | (x & 3)] - 0.5);
+    let c;
+    if (best > 0.93) c = q >= 2 ? D0 : D1;
+    else c = q >= 2 ? W0 : q === 1 ? W1 : W2;
+    pset(x, y, c);
+  }
+}
+function drawShadows() {
+  const b = ball, h = b.y - R;
+  // contact shadow
+  if (proj(b.x, 0, b.z, PP)) {
+    const rp = R * F / PP.z * (1.15 + h * 0.08), ry = rp * clamp(cam.y / PP.z, 0.18, 0.6) + 0.5, a = clamp(0.55 - h * 0.12, 0.12, 0.55);
+    for (let y = Math.floor(PP.y - ry); y <= PP.y + ry; y++) for (let x = Math.floor(PP.x - rp); x <= PP.x + rp; x++) {
+      const dx = (x + 0.5 - PP.x) / rp, dy = (y + 0.5 - PP.y) / ry; if (dx * dx + dy * dy <= 1) blendp(x, y, 6, 22, 14, a);
+    }
+  }
+  // floodlight shadows: one faint shadow cast by each tower
+  if (h > 0.05) for (const l of LIGHTS) {
+    const k = b.y / (l[1] - b.y), sx = b.x + (b.x - l[0]) * k, sz = b.z + (b.z - l[2]) * k;
+    if (!proj(sx, 0, sz, PP)) continue;
+    const rp = R * F / PP.z * 1.2, ry = rp * clamp(cam.y / PP.z, 0.18, 0.6) + 0.4;
+    for (let y = Math.floor(PP.y - ry); y <= PP.y + ry; y++) for (let x = Math.floor(PP.x - rp); x <= PP.x + rp; x++) {
+      const dx = (x + 0.5 - PP.x) / rp, dy = (y + 0.5 - PP.y) / ry; if (dx * dx + dy * dy <= 1) blendp(x, y, 6, 22, 14, 0.16);
+    }
+  }
+  // keeper and wall shadows
+  const blob = (x, z, w, a) => {
+    if (!proj(x, 0, z, PP)) return; const rp = w * F / PP.z, ry = rp * clamp(cam.y / PP.z, 0.15, 0.6) + 0.5;
+    for (let y = Math.floor(PP.y - ry); y <= PP.y + ry; y++) for (let xx = Math.floor(PP.x - rp); xx <= PP.x + rp; xx++) { const dx = (xx + 0.5 - PP.x) / rp, dy = (y + 0.5 - PP.y) / ry; if (dx * dx + dy * dy <= 1) blendp(xx, y, 6, 22, 14, a); }
+  };
+  blob(K.x, K.z, (0.35 + Math.abs(Math.sin(K.th)) * 0.6) * K.s, clamp(0.4 - (K.y - K.s) * 0.2, 0.15, 0.4));
+  for (const m of wall) blob(m.x, m.z, m.type === 'lie' ? 0.85 : 0.32, clamp(0.4 - m.y * 0.4, 0.15, 0.4));
+}
+function drawTarget() {
+  if (!target || (flight && flight.crossed)) return;
+  const pulse = 0.5 + 0.5 * Math.sin(realT * 6), col = pulse > 0.5 ? PK(C.gold) : PK([255, 240, 170]);
+  const r = target.r * (0.92 + 0.08 * pulse);
+  for (let i = 0; i < 40; i++) {
+    const a = i / 40 * Math.PI * 2;
+    if (proj(target.x + Math.cos(a) * r, target.y + Math.sin(a) * r, 0.03, PP)) { pset(PP.x, PP.y, col); }
+  }
+  if (proj(target.x, target.y, 0.03, PP)) { pset(PP.x, PP.y, col); pset(PP.x - 1, PP.y, col); pset(PP.x + 1, PP.y, col); pset(PP.x, PP.y - 1, col); pset(PP.x, PP.y + 1, col); }
+}
+function drawParticles() {
+  for (const p of particles) {
+    if (!proj(p.x, p.y, p.z, PP)) continue;
+    if (p.smoke) { const a = clamp(p.life / 1.6, 0, 1) * 0.28; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blendp(PP.x + dx, PP.y + dy, 120, 110, 130, a); continue; }
+    if (p.glow) { const c = p.rgb; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) blendp(PP.x + dx, PP.y + dy, c[0], c[1], c[2], 0.3); }
+    if (p.flick && Math.sin(realT * 25 + p.x * 9) < -0.3) continue;
+    const s = PP.z < 6 ? 2 : 1; pset(PP.x, PP.y, p.c); if (s > 1) { pset(PP.x + 1, PP.y, p.c); pset(PP.x, PP.y + 1, p.c); pset(PP.x + 1, PP.y + 1, p.c); }
+  }
+}
+function drawTrail() {
+  for (let i = 0; i < trail.length; i++) {
+    const p = trail[i]; if (!proj(p[0], p[1], p[2], PP)) continue;
+    const a = (i / trail.length) * 0.5; blendp(PP.x, PP.y, 255, 246, 220, a);
+  }
+}
+function drawSwipe() {
+  const draw = (pts, alpha) => {
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2);
+      for (let k = 0; k <= n; k++) { const t = k / Math.max(1, n), x = lerp(a.x, b.x, t), y = lerp(a.y, b.y, t); const al = alpha * (0.35 + 0.65 * i / pts.length); blendp(x, y, 247, 237, 211, al); blendp(x + 1, y, 247, 237, 211, al * 0.6); }
+    }
+  };
+  if (swipe) draw(swipe.pts, 0.9);
+  for (const s of swipeFade) draw(s.pts, s.a);
+}
+function drawAimRing() {
+  if (state !== 'aim' || !proj(ball.x, ball.y, ball.z, PP)) return;
+  const r = R * F / PP.z * (2.1 + 0.25 * Math.sin(realT * 5)), n = 28;
+  for (let i = 0; i < n; i++) { if ((i + Math.floor(realT * 8)) % 4 > 1) continue; const a = i / n * Math.PI * 2; blendp(PP.x + Math.cos(a) * r, PP.y + Math.sin(a) * r * 0.42 + R * F / PP.z * 0.9, 247, 237, 211, 0.75); }
+}
+function drawKickFlash() {
+  if (kickFlash <= 0 || !proj(kickPos.x, R, kickPos.z, PP)) return;
+  const k = 1 - kickFlash / 0.16, r = (R * F / PP.z) * (1.2 + k * 2.4), n = 22;
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; blendp(PP.x + Math.cos(a) * r, PP.y + Math.sin(a) * r * 0.6, 255, 240, 200, 0.8 * (1 - k)); }
+}
+const items = [];
+function render() {
+  renderWorld();
+  drawShadows();
+  items.length = 0;
+  const depth = (x, y, z) => proj(x, y, z, PP) ? PP.z : -1;
+  items.push([depth(0, 1, -NET_D), drawNetBack]);
+  items.push([depth(-GOAL_HW, 1, -1), () => drawNetSide(-1)]);
+  items.push([depth(GOAL_HW, 1, -1), () => drawNetSide(1)]);
+  items.push([depth(0, GOAL_H, -1.2), drawNetRoof]);
+  items.push([depth(0, 1, 0) - 0.01, drawPosts]);
+  items.push([depth(0, 1, 0.02), drawTarget]);
+  items.push([depth(K.x, K.y, K.z), drawKeeper]);
+  for (const m of wall) items.push([depth(m.x, 1, m.z), () => drawWallMan(m)]);
+  items.push([depth(ball.x, ball.y, ball.z) - (ball.held ? 0.2 : 0), drawBall]);
+  items.sort((a, b) => b[0] - a[0]);
+  for (const it of items) if (it[0] > 0) it[1]();
+  drawTrail(); drawParticles(); drawKickFlash(); if (!pending) drawAimRing(); drawSwipe(); drawSling();
+  if (flash > 0) { const a = clamp(flash, 0, 0.35); for (let i = 0; i < buf.length; i += 1) { if (((i % W) + ((i / W) | 0)) & 1) continue; const c = buf[i], r = c & 255, g = (c >> 8) & 255, b = (c >> 16) & 255; buf[i] = ((255 << 24) | ((b + (255 - b) * a) << 16) | ((g + (240 - g) * a) << 8) | (r + (255 - r) * a)) >>> 0; } }
+  if (state === 'replay') { const bh = Math.round(H * 0.075); for (let y = 0; y < bh; y++) for (let x = 0; x < W; x++) { buf[y * W + x] = INK; buf[(H - 1 - y) * W + x] = INK; } }
+  ctx.putImageData(img, 0, 0);
+  const sx = shake > 0 ? (Math.random() * 2 - 1) * shake * 10 : 0, sy = shake > 0 ? (Math.random() * 2 - 1) * shake * 10 : 0;
+  cv.style.transform = shake > 0 ? 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px)' : '';
+}
+
+/* ---------------- loop ---------------- */
+let last = performance.now(), acc = 0;
+function simStep(dt) {
+  simT += dt;
+  stepBall(dt);
+  keeperUpdate(dt);
+  wallUpdate(dt);
+  if (state === 'flight') checkOutcome();
+  if (state === 'aim' && kick.kind === 'rodando' && kick.started && !flight) {
+    // the pass rolled past without a shot
+    const d = kick.dir, past = (ball.x - kick.P.x) * d.x + (ball.z - kick.P.z) * d.z;
+    if (past > 2.4 || Math.hypot(ball.vx, ball.vz) < 0.4) {
+      if (pending) closeContact(); sling = null; swipe = null;
+      flight = { outcome: null, kind: 'rodando' }; finishFail('SE TE ESCAPÓ');
+    }
+  }
+  if (recOn && (recCnt++ & 3) === 0 && rec.length < 600) rec.push({ bx: ball.x, by: ball.y, bz: ball.z, m: ball.m.slice(), kx: K.x, ky: K.y, kth: K.th, kp: K.pose, kl: K.low, w: wall.map(m => [m.x, m.y, m.z, m.run || 0]), na: net.amp, nx: net.x, ny: net.y });
+}
+const RP_CAMS = { red: 'CÁMARA DE RED', lateral: 'CÁMARA LATERAL', balon: 'CÁMARA BALÓN' };
+function startReplay() {
+  const opts = Math.abs(kickPos.x) > 18 ? ['red', 'balon'] : ['red', 'lateral', 'balon'];
+  const m = opts[(Math.random() * opts.length) | 0];
+  const dur = (rec.length - 1) / 60;
+  rp = { t: 0, mode: m, speed: Math.max(0.5, dur / 4.2), side: Math.sign(rec[0].bx) || 1, end: rec[rec.length - 1], cx: 0, cz: 0, frozen: false };
+  rp.len = dur / rp.speed + 0.5;
+  state = 'replay'; particles.length = 0; trail.length = 0;
+  $('rcam').textContent = RP_CAMS[m]; $('replay').hidden = false; $('replayTap').hidden = false;
+  if (m === 'red') { cam.x = clamp(rp.end.bx * 0.35, -2.2, 2.2); cam.z = -5.3; cam.y = 1.45; }
+  if (m === 'lateral') { cam.x = -rp.side * 17; cam.z = 7; cam.y = 2.3; }
+}
+function endReplay() {
+  $('replay').hidden = true; $('replayTap').hidden = true; rp = null;
+  if (lives <= 0) gameOver(); else newKick(false);
+}
+function updReplay(dt) {
+  rp.t += dt;
+  const f = clamp(rp.t * 60 * rp.speed, 0, rec.length - 1), i0 = Math.floor(f), i1 = Math.min(rec.length - 1, i0 + 1), a = f - i0;
+  const A = rec[i0], B = rec[i1];
+  ball.x = lerp(A.bx, B.bx, a); ball.y = lerp(A.by, B.by, a); ball.z = lerp(A.bz, B.bz, a);
+  for (let k = 0; k < 9; k++) ball.m[k] = A.m[k];
+  K.x = lerp(A.kx, B.kx, a); K.y = lerp(A.ky, B.ky, a); K.th = lerp(A.kth, B.kth, a); K.pose = lerp(A.kp, B.kp, a); K.low = lerp(A.kl, B.kl, a);
+  for (let j = 0; j < wall.length && j < A.w.length; j++) { wall[j].x = lerp(A.w[j][0], B.w[j][0], a); wall[j].y = lerp(A.w[j][1], B.w[j][1], a); wall[j].z = lerp(A.w[j][2], B.w[j][2], a); wall[j].run = A.w[j][3]; }
+  net.amp = lerp(A.na, B.na, a); net.x = A.nx; net.y = A.ny;
+  trail.length = 0; for (let k = Math.max(0, i0 - 14); k <= i0; k++) trail.push([rec[k].bx, rec[k].by, rec[k].bz]);
+  const e = 1 - Math.exp(-6 * dt);
+  if (rp.mode === 'balon') {
+    const P = rec[Math.max(0, i0 - 3)];
+    let dx = ball.x - P.bx, dz = ball.z - P.bz; const l = Math.hypot(dx, dz);
+    if (l > 0.05 && !rp.frozen) { dx /= l; dz /= l; rp.dx = lerp(rp.dx ?? dx, dx, 0.3); rp.dz = lerp(rp.dz ?? dz, dz, 0.3); }
+    if (ball.z < 2.5) rp.frozen = true;
+    if (!rp.frozen && rp.dx !== undefined) {
+      cam.x = ball.x - rp.dx * 2.6; cam.z = ball.z - rp.dz * 2.6; cam.y = Math.max(0.7, ball.y + 0.5);
+      cam.yaw = Math.atan2(rp.dx, -rp.dz);
+    }
+  } else {
+    const yaw = Math.atan2(ball.x - cam.x, -(ball.z - cam.z));
+    let d = yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * (rp.t < 0.05 ? 1 : e);
+  }
+  if (rp.t >= rp.len) endReplay();
+}
+function updCelebrations(dt) {
+  cel.scarves = Math.max(0, cel.scarves - dt); cel.wave = Math.max(0, cel.wave - dt);
+  if (cel.flares > 0) {
+    cel.flares -= dt;
+    const n = Math.random() < dt * 60 ? 3 : 0;
+    for (let i = 0; i < n; i++) {
+      const s = cel.flareSrc[(Math.random() * cel.flareSrc.length) | 0]; if (!s) break;
+      const c = [[255, 60, 40], [255, 120, 50], [255, 200, 90]][(Math.random() * 3) | 0];
+      particles.push({ x: s[0] + rnd(-0.3, 0.3), y: s[1], z: s[2], vx: rnd(-0.4, 0.4), vy: rnd(0.6, 2), vz: rnd(-0.3, 0.3), life: rnd(0.25, 0.6), c: PK(c), rgb: c, drag: 2, g: -0.05, glow: true });
+      if (Math.random() < 0.35) particles.push({ x: s[0], y: s[1] + 0.5, z: s[2], vx: rnd(0.2, 1.2), vy: rnd(0.8, 1.6), vz: rnd(-0.3, 0.3), life: rnd(1.2, 1.8), c: 0, drag: 0.6, g: -0.04, smoke: true });
+    }
+  }
+  if (cel.fireworks > 0) {
+    cel.fireworks -= dt; cel.fwNext -= dt;
+    if (cel.fwNext <= 0) {
+      cel.fwNext = rnd(0.25, 0.5);
+      const fwd = { x: Math.sin(cam.yaw), z: -Math.cos(cam.yaw) }, rt = { x: Math.cos(cam.yaw), z: Math.sin(cam.yaw) }, d = rnd(45, 60), o = rnd(-25, 25);
+      particles.push({ x: cam.x + fwd.x * d + rt.x * o, y: 3, z: cam.z + fwd.z * d + rt.z * o, vx: rnd(-1, 1), vy: rnd(19, 24), vz: rnd(-1, 1), life: rnd(1.0, 1.25), c: PK([255, 246, 220]), rgb: [255, 246, 220], drag: 0.15, g: 1, glow: true, rocket: true });
+    }
+  }
+}
+function update(dtReal) {
+  realT += dtReal;
+  updCelebrations(dtReal);
+  if (state === 'replay') {
+    updParticles(dtReal);
+    shake = 0; flash = Math.max(0, flash - dtReal); celebrate = Math.max(0, celebrate - dtReal);
+    updReplay(dtReal);
+    return;
+  }
+  let dt = dtReal;
+  if (stopT > 0) { stopT -= dtReal; dt = 0; }
+  if (slowT > 0) { slowT -= dtReal; timeScale = lerp(timeScale, 0.26, 1 - Math.exp(-18 * dtReal)); }
+  else timeScale = lerp(timeScale, 1, 1 - Math.exp(-7 * dtReal));
+  // a rolling ball slows down while you line up the strike, and waits while you pick the contact point
+  const aimScale = (state === 'aim' && kick.kind === 'rodando' && kick.started) ? (pending ? 0 : (swipe || sling) ? 0.3 : 0.85) : 1;
+  const sdt = dt * timeScale * aimScale;
+  acc += sdt;
+  let n = 0; while (acc >= STEP && n < 40) { acc -= STEP; simStep(STEP); n++; }
+  // dramatic slow motion when the keeper is about to meet the ball
+  if (state === 'flight' && flight && !flight.slowUsed && (K.mode === 'dive' || K.mode === 'set') && ball.z < 5.5 && ball.z > 0.5 && !ball.held) {
+    keeperJoints(KJ);
+    const hx = (KJ.haL[0] + KJ.haR[0]) / 2, hy = (KJ.haL[1] + KJ.haR[1]) / 2;
+    if (Math.hypot(ball.x - hx, ball.y - hy) < 1.3 && Math.random() < 0.85) { flight.slowUsed = true; slowT = 0.42; }
+  }
+  // trail
+  if (ball.live && (state === 'flight' || state === 'result')) { trail.push([ball.x, ball.y, ball.z]); if (trail.length > 16) trail.shift(); }
+  else if (trail.length) trail.shift();
+  updParticles(sdt);
+  // net spring
+  net.vel += (-90 * net.amp - 7 * net.vel) * sdt; net.amp += net.vel * sdt;
+  // camera
+  const e = k => 1 - Math.exp(-k * dtReal);
+  if (state === 'title' || state === 'over') {
+    const sw = Math.sin(realT * 0.25) * 0.18;
+    cam.x = lerp(cam.x, camBase.x + Math.sin(realT * 0.2) * 1.5, e(1)); cam.z = lerp(cam.z, camBase.z, e(1)); cam.y = lerp(cam.y, camBase.y, e(1)); cam.yaw = lerp(cam.yaw, camBase.yaw + sw, e(1));
+  } else if (state === 'trans') {
+    transT = Math.min(1, transT + dtReal / 0.75);
+    const t = transT < 0.5 ? 2 * transT * transT : 1 - Math.pow(-2 * transT + 2, 2) / 2;
+    cam.x = lerp(camFrom.x, camBase.x, t); cam.z = lerp(camFrom.z, camBase.z, t); cam.y = lerp(camFrom.y, camBase.y, t);
+    let dy = camBase.yaw - camFrom.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); cam.yaw = camFrom.yaw + dy * t;
+    if (transT >= 1) { state = 'aim'; onAimStart(); }
+  } else if (state === 'aim') {
+    cam.x = lerp(cam.x, camBase.x, e(6)); cam.z = lerp(cam.z, camBase.z, e(6)); cam.y = lerp(cam.y, camBase.y + Math.sin(realT * 1.3) * 0.02, e(6)); cam.yaw = lerp(cam.yaw, camBase.yaw + Math.sin(realT * 0.7) * 0.004, e(6));
+  } else {
+    const k = 0.28;
+    let tx = camBase.x + (ball.x - camBase.x) * k, tz = camBase.z + (ball.z - camBase.z) * k;
+    tz = Math.max(tz, Math.min(8, camBase.z)); tx = clamp(tx, -36, 36);
+    cam.x = lerp(cam.x, tx, e(2.6)); cam.z = lerp(cam.z, tz, e(2.6));
+    const ay = Math.atan2(ball.x - cam.x, -(ball.z - cam.z));
+    let d = ay - camBase.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+    cam.yaw = lerp(cam.yaw, camBase.yaw + clamp(d, -0.5, 0.5) * 0.35, e(2.5));
+  }
+  // timers
+  shake = Math.max(0, shake - dtReal * 1.6); flash = Math.max(0, flash - dtReal); celebrate = Math.max(0, celebrate - dtReal); kickFlash = Math.max(0, kickFlash - dtReal);
+  for (let i = swipeFade.length - 1; i >= 0; i--) { swipeFade[i].a -= dtReal * 2.5; if (swipeFade[i].a <= 0) swipeFade.splice(i, 1); }
+  if (state === 'result') {
+    resultT += dtReal;
+    if (resultT > 0.9) recOn = false;
+    const goal = flight && flight.outcome === 'goal', save = flight && flight.outcome === 'miss' && flight.keeper;
+    if (resultT > (goal ? 1.9 : save ? 1.4 : 1.6) || (skipReq && resultT > 0.6)) {
+      const skipped = skipReq; skipReq = false; recOn = false;
+      if ((goal || save) && !skipped && rec.length > 20) startReplay();
+      else if (lives <= 0) gameOver(); else newKick(false);
+    }
+  }
+  skipReq = skipReq && state === 'result';
+  updateWindArrow();
+}
+let skipReq = false;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  update(dt); render();
+}
+
+/* ---------------- input ---------------- */
+function cpt(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H, t: e.timeStamp || performance.now() };
+}
+wrap.addEventListener('pointerdown', e => {
+  if (e.target.closest('button') || e.target.closest('.screen')) return;
+  audioInit();
+  if (state === 'result') { skipReq = true; return; }
+  if (state === 'replay') { endReplay(); return; }
+  if (state !== 'aim' || pending || e.target.closest('#contact')) return;
+  try { wrap.setPointerCapture(e.pointerId); } catch (_) { }
+  if (mode === 'sling') { const p = cpt(e); sling = { id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y }; e.preventDefault(); return; }
+  swipe = { id: e.pointerId, pts: [cpt(e)] };
+  e.preventDefault();
+});
+wrap.addEventListener('pointermove', e => {
+  if (sling && e.pointerId === sling.id) { const p = cpt(e); sling.x = p.x; sling.y = p.y; return; }
+  if (!swipe || e.pointerId !== swipe.id) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ev of evs) swipe.pts.push(cpt(ev));
+  if (swipe.pts.length > 120) swipe.pts.splice(0, swipe.pts.length - 120);
+});
+const endSwipe = e => {
+  if (sling && e.pointerId === sling.id) {
+    const p = cpt(e); sling.x = p.x; sling.y = p.y;
+    const a = slingAim(sling.x - sling.sx, sling.y - sling.sy); sling = null;
+    if (a && state === 'aim') openContact(a);
+    return;
+  }
+  if (!swipe || e.pointerId !== swipe.id) return;
+  swipe.pts.push(cpt(e));
+  const s = swipe; swipe = null;
+  swipeFade.push({ pts: s.pts, a: 0.9 });
+  if (state === 'aim') shoot(s);
+};
+wrap.addEventListener('pointerup', endSwipe);
+wrap.addEventListener('pointercancel', e => { if (swipe && e.pointerId === swipe.id) swipe = null; if (sling && e.pointerId === sling.id) sling = null; });
+$('cball').addEventListener('pointerdown', e => {
+  e.stopPropagation(); e.preventDefault(); audioInit();
+  if (!pending || !$('cmark').hidden) return;
+  const r = $('cball').getBoundingClientRect();
+  const u = ((e.clientX - r.left) / r.width - 0.5) * 2, v = -((e.clientY - r.top) / r.height - 0.5) * 2;
+  if (u * u + v * v > 1.08) return;
+  const mk = $('cmark'); mk.style.left = ((u / 2 + 0.5) * 100) + '%'; mk.style.top = ((-v / 2 + 0.5) * 100) + '%'; mk.hidden = false;
+  setTimeout(() => kickSling(u, v), 110);
+});
+$('cback').addEventListener('click', e => { e.stopPropagation(); closeContact(); });
+$('contact').addEventListener('pointerdown', e => e.stopPropagation());
+document.querySelectorAll('.modes button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMode(b.dataset.mode); }));
+$('modeBtn').addEventListener('click', e => { e.stopPropagation(); setMode(mode === 'swipe' ? 'sling' : 'swipe'); });
+$('title').addEventListener('click', e => { if (e.target.closest('button')) return; startGame(); });
+$('again').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+const muteBtn = $('mute');
+function syncMute() { muteBtn.textContent = au.muted ? 'MUDO' : 'SON'; muteBtn.setAttribute('aria-pressed', au.muted ? 'true' : 'false'); if (au.m) au.m.gain.value = au.muted ? 0 : 0.8; }
+muteBtn.addEventListener('click', e => { e.stopPropagation(); audioInit(); au.muted = !au.muted; try { localStorage.setItem('golazo-mute', au.muted ? '1' : '0'); } catch (_) { } syncMute(); });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('contextmenu', e => { if (wrap.contains(e.target)) e.preventDefault(); });
+
+/* ---------------- boot ---------------- */
+function boot(data) {
+  if (data && data.best > best) best = data.best;
+  resize();
+  spot = { x: 2.5, z: 23 }; setCamFor(spot); Object.assign(cam, camBase); placeBall(); keeperReset();
+  updateHUD(); syncMute(); setMode(mode);
+  requestAnimationFrame(frame);
+}
+/* ---------------- online ranking (Supabase) ---------------- */
+const NAME_RE = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ_.-]{3,16}$/;
+const NET = (() => {
+  const cfg = window.GOLAZO_CONFIG || {};
+  const url = String(cfg.supabaseUrl || '').trim().replace(/\/+$/, ''), key = String(cfg.supabaseAnonKey || '').trim();
+  const enabled = (/^https:\/\//.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(url)) && key.length > 20;
+  async function rpc(fn, args) {
+    const headers = { 'Content-Type': 'application/json', apikey: key };
+    if (!key.startsWith('sb_')) headers.Authorization = 'Bearer ' + key;   // legacy anon JWT keys
+    let r;
+    try { r = await fetch(url + '/rest/v1/rpc/' + fn, { method: 'POST', headers, body: JSON.stringify(args || {}) }); }
+    catch (e) { const err = new Error('network'); err.code = 'network'; throw err; }
+    const txt = await r.text(); let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) { }
+    if (!r.ok) { const err = new Error((data && data.message) || ('http_' + r.status)); err.code = (data && data.message) || 'http'; throw err; }
+    return data;
+  }
+  return { enabled, rpc };
+})();
+const LS = {
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+};
+let player = LS.get('golazo-player');           // { id, name, token } | { guest: true } | null
+let lastGame = null;                              // the game that just finished
+let nameReturn = 'title';
+const fmt = n => Number(n || 0).toLocaleString('es-ES');
+const isPlayer = () => !!(player && player.id && player.token);
+
+function showScreen(id) { for (const s of ['nameScr', 'title', 'over', 'board']) $(s).hidden = s !== id; }
+function syncPlayerUI() {
+  const chip = $('tPlayer');
+  chip.hidden = $('tBoard').hidden = !NET.enabled;
+  if (isPlayer()) { chip.textContent = 'JUGADOR · ' + player.name.toUpperCase(); chip.classList.add('static'); chip.disabled = true; }
+  else { chip.textContent = 'INVITADO · CREAR NOMBRE'; chip.classList.remove('static'); chip.disabled = false; }
+}
+
+/* name screen */
+let nameTimer = 0, nameSeq = 0, nameOK = false;
+function setNameMsg(text, cls) { const m = $('nameMsg'); m.textContent = text; m.className = 'nmsg' + (cls ? ' ' + cls : ''); }
+function openName(from) {
+  nameReturn = from || 'title';
+  $('nameBack').hidden = !player;
+  $('guestBtn').hidden = $('guestWarn').hidden = !!player;
+  $('nameGo').disabled = false; $('nameGo').textContent = 'ENTRAR';
+  setNameMsg('De 3 a 16 caracteres: letras, números y _ . -');
+  showScreen('nameScr');
+  setTimeout(() => { try { $('nameInput').focus(); } catch (e) { } }, 60);
+}
+function closeName() {
+  if (nameReturn === 'over') { showScreen('over'); renderOverNet(); }
+  else { showScreen('title'); }
+  syncPlayerUI();
+}
+$('nameInput').addEventListener('input', () => {
+  const v = $('nameInput').value.trim(); nameOK = false; clearTimeout(nameTimer); const seq = ++nameSeq;
+  if (!v) return setNameMsg('De 3 a 16 caracteres: letras, números y _ . -');
+  if (v.length < 3) return setNameMsg('Mínimo 3 caracteres', 'bad');
+  if (!NAME_RE.test(v)) return setNameMsg('Solo letras, números y _ . - (sin espacios)', 'bad');
+  setNameMsg('Comprobando…');
+  nameTimer = setTimeout(async () => {
+    try {
+      const free = await NET.rpc('name_available', { p_name: v });
+      if (seq !== nameSeq) return;
+      nameOK = !!free; setNameMsg(free ? 'Disponible' : 'Ese nombre ya está cogido', free ? 'ok' : 'bad');
+    } catch (e) { if (seq === nameSeq) setNameMsg('No se pudo comprobar. Puedes intentarlo igualmente.'); }
+  }, 350);
+});
+$('nameForm').addEventListener('submit', async e => {
+  e.preventDefault(); e.stopPropagation();
+  const v = $('nameInput').value.trim();
+  if (!NAME_RE.test(v)) { setNameMsg(v.length < 3 ? 'Mínimo 3 caracteres' : 'Solo letras, números y _ . - (sin espacios)', 'bad'); return; }
+  const btn = $('nameGo'); btn.disabled = true; btn.textContent = 'CREANDO…';
+  try {
+    const res = await NET.rpc('register_player', { p_name: v });
+    player = { id: res.id, name: res.name, token: res.token }; LS.set('golazo-player', player);
+    setNameMsg('¡Hecho! Ya estás en el ranking', 'ok');
+    const fromOver = nameReturn === 'over';
+    closeName();
+    // the game just played as a guest counts too
+    if (fromOver && lastGame && !lastGame.sent && Date.now() - lastGame.at < 10 * 60 * 1000) submitLast();
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'ENTRAR';
+    if (err.code === 'name_taken') setNameMsg('Ese nombre ya está cogido', 'bad');
+    else if (err.code === 'invalid_name') setNameMsg('Solo letras, números y _ . - (sin espacios)', 'bad');
+    else setNameMsg('Sin conexión con el ranking. Prueba otra vez o juega como invitado.', 'bad');
+  }
+});
+$('guestBtn').addEventListener('click', e => { e.stopPropagation(); player = { guest: true }; LS.set('golazo-player', player); closeName(); });
+$('nameBack').addEventListener('click', e => { e.stopPropagation(); closeName(); });
+$('tPlayer').addEventListener('click', e => { e.stopPropagation(); if (!isPlayer()) openName('title'); });
+
+/* submitting scores */
+function renderOverNet() {
+  const box = $('oNet'); box.className = 'onet'; box.innerHTML = '';
+  if (!NET.enabled || !lastGame) return;
+  const add = (tag, text, cls) => { const el = document.createElement(tag); el.textContent = text; if (cls) el.className = cls; box.appendChild(el); return el; };
+  if (!isPlayer()) {
+    add('span', 'Como invitado esta puntuación no entra en el ranking');
+    if (lastGame.score > 0) { const b = add('button', 'CREAR NOMBRE Y GUARDARLA', 'chip gold'); b.type = 'button'; b.addEventListener('click', ev => { ev.stopPropagation(); openName('over'); }); }
+    return;
+  }
+  const st = lastGame.status;
+  if (lastGame.score <= 0) add('span', 'Marca al menos un gol para entrar en el ranking');
+  else if (st === 'sending') add('span', 'Guardando en el ranking…');
+  else if (st === 'ok') {
+    const r = lastGame.result || {};
+    const p = add('span', ''); p.append('Puesto ', Object.assign(document.createElement('b'), { textContent: '#' + r.week_rank }), ' de la semana · ', Object.assign(document.createElement('b'), { textContent: '#' + r.rank }), ' de siempre');
+  } else if (st === 'queued') add('span', 'Sin conexión: se guardará en tu próxima partida');
+  else if (st === 'lost') { box.classList.add('bad'); add('span', 'Tu jugador ya no existe en el ranking. Crea otro nombre para seguir compitiendo.'); const b = add('button', 'CREAR NOMBRE', 'chip gold'); b.type = 'button'; b.addEventListener('click', ev => { ev.stopPropagation(); openName('over'); }); }
+  else if (st === 'error') { box.classList.add('bad'); add('span', 'No se pudo guardar.'); const b = add('button', 'REINTENTAR', 'chip'); b.type = 'button'; b.addEventListener('click', ev => { ev.stopPropagation(); submitLast(); }); }
+}
+async function sendScore(g) {
+  return NET.rpc('submit_score', { p_player: player.id, p_token: player.token, p_score: g.score, p_goals: g.goals, p_streak: g.streak });
+}
+async function submitLast() {
+  const g = lastGame; if (!g || !isPlayer() || !NET.enabled || g.score <= 0 || g.sent) { renderOverNet(); return; }
+  // only a player's best game counts, so a queued better game goes first
+  const pend = LS.get('golazo-pending');
+  const send = pend && pend.id === player.id && pend.score > g.score ? pend : g;
+  g.status = 'sending'; renderOverNet();
+  try {
+    g.result = await sendScore(send); g.sent = true; g.status = 'ok';
+    if (send === pend || (pend && pend.score <= g.score)) LS.set('golazo-pending', null);
+  } catch (err) {
+    if (err.code === 'bad_token') { g.status = 'lost'; player = null; LS.set('golazo-player', null); syncPlayerUI(); }
+    else if (err.code === 'network' || err.code === 'too_fast' || err.code === 'http') {
+      if (!pend || pend.score < g.score) LS.set('golazo-pending', { id: player.id, score: g.score, goals: g.goals, streak: g.streak });
+      g.status = 'queued';
+    } else g.status = 'error';
+  }
+  if (lastGame === g) renderOverNet();
+}
+async function flushPending() {
+  const pend = LS.get('golazo-pending');
+  if (!pend || !isPlayer() || pend.id !== player.id || !NET.enabled) return;
+  try { await sendScore(pend); LS.set('golazo-pending', null); }
+  catch (err) { if (err.code === 'bad_token' || err.code === 'bad_score') LS.set('golazo-pending', null); }
+}
+
+/* leaderboard */
+let boardPeriod = LS.get('golazo-board') === 'all' ? 'all' : 'week', boardReturn = 'title', boardSeq = 0;
+function openBoard(from) {
+  boardReturn = from; showScreen('board'); loadBoard();
+}
+async function loadBoard() {
+  const seq = ++boardSeq, list = $('bList'), state = $('bState'), me = $('bMe');
+  document.querySelectorAll('#board .tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.p === boardPeriod ? 'true' : 'false'));
+  list.innerHTML = ''; me.hidden = true; state.hidden = false; state.textContent = 'Cargando…';
+  try {
+    const [rows, standing] = await Promise.all([
+      NET.rpc('get_leaderboard', { p_period: boardPeriod, p_limit: 50 }),
+      isPlayer() ? NET.rpc('get_player_standing', { p_player: player.id, p_period: boardPeriod }).catch(() => null) : Promise.resolve(null)
+    ]);
+    if (seq !== boardSeq) return;
+    if (!rows || !rows.length) { state.textContent = boardPeriod === 'week' ? 'Nadie ha jugado esta semana. ¡Estrena el ranking!' : 'Todavía no hay récords. ¡Sé el primero!'; return; }
+    state.hidden = true;
+    let meShown = false;
+    for (const r of rows) {
+      const li = document.createElement('li');
+      if (r.rank <= 3) li.className = 'p' + r.rank;
+      if (isPlayer() && r.name.toLowerCase() === player.name.toLowerCase()) { li.classList.add('me'); meShown = true; }
+      const c = (cls, t) => { const s = document.createElement('span'); s.className = cls; s.textContent = t; li.appendChild(s); };
+      c('r', '#' + r.rank); c('n', r.name); c('g', r.goals + ' GOLES'); c('s', fmt(r.score));
+      list.appendChild(li);
+    }
+    if (isPlayer() && !meShown) {
+      me.hidden = false;
+      me.textContent = standing ? 'Tu posición: #' + standing.rank + ' · ' + fmt(standing.score) : (boardPeriod === 'week' ? 'Esta semana aún no tienes puntuación' : 'Aún no tienes puntuación');
+    }
+  } catch (e) {
+    if (seq !== boardSeq) return;
+    state.textContent = 'No se pudo cargar el ranking. Revisa tu conexión.';
+  }
+}
+document.querySelectorAll('#board .tabs button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); boardPeriod = b.dataset.p; LS.set('golazo-board', boardPeriod); loadBoard(); }));
+$('bClose').addEventListener('click', e => { e.stopPropagation(); showScreen(boardReturn); });
+$('tBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('title'); });
+$('oBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('over'); });
+
+boot({});
+syncPlayerUI();
+if (NET.enabled && !player) openName('title');
+else flushPending();
+if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
+if (DEBUG) Object.assign(window.__golazo,  { setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; } });
+})();
+</script>
+</body>
+</html>
