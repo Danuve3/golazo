@@ -596,8 +596,8 @@ const KEEPERS = [
   ['DINO ZOFF',           'gato',    [130, 130, 138], [246, 240, 228], { k: 'sides', w: 0.74 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.gry, skin: SK[1] }],
   ['GIANLUIGI BUFFON',    'gigante', [40, 40, 52],    [255, 200, 74],  { k: 'sides', w: 0.6 },    [40, 40, 52],  [255, 200, 74],  { style: 'long', hair: HR.drk, beard: true, skin: SK[1] }],
   ['LEV YASHIN',          'pulpo',   [24, 22, 30],    [90, 86, 100],   { k: 'panel', w: 0.12 },   [24, 22, 30],  [24, 22, 30],    { style: 'cap', capC: [26, 24, 32], hair: HR.drk, skin: SK[0] }],
-  ['BENJI PRICE',         'jefe',    [240, 240, 236], [140, 90, 220],  { k: 'sides', w: 0.7 },    [140, 90, 220], [255, 200, 74], { style: 'buzz', hair: HR.drk, skin: SK[0] }]
-].map(([name, arch, jersey, alt, pat, shorts, glove, look, sz], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look, sz: sz || 1 }));
+  ['BENJI PRICE',         'jefe',    [240, 240, 236], [140, 90, 220],  { k: 'sides', w: 0.7 },    [140, 90, 220], [255, 222, 70], { style: 'buzz', hair: HR.drk, skin: SK[0] }, 1, true]
+].map(([name, arch, jersey, alt, pat, shorts, glove, look, sz, shine], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look, sz: sz || 1, shine: !!shine }));
 // goals needed to face keeper i: one goal each for the first eight, then two each. Benji at 30 goals.
 const kStart = i => i < 8 ? i : 8 + (i - 8) * 2;
 function keeperFor(goals) { let i = 0; while (i < KEEPERS.length - 1 && goals >= kStart(i + 1)) i++; return KEEPERS[i]; }
@@ -1578,6 +1578,31 @@ function drawKeeper() {
   }
   figure(parts);
   faceDetail(Hf, T.look);
+  if (T.shine) gloveShine(J, z, S);
+}
+// final boss: golden gloves with a pulsing glow and twinkling glints
+const SHINE_W = PK([255, 255, 236]), SHINE_G = PK([255, 232, 120]);
+function gloveShine(J, z, S) {
+  for (const sd of [-1, 1]) {
+    const el = sd < 0 ? J.elL : J.elR, ha = sd < 0 ? J.haL : J.haR;
+    const gx = el[0] + (ha[0] - el[0]) * 1.02, gy = el[1] + (ha[1] - el[1]) * 1.02;
+    if (!proj(gx, gy, z, PP)) continue;
+    const cx = PP.x, cy = PP.y, rp = Math.max(4, 0.3 * S * F / PP.z);
+    const pulse = 0.55 + 0.45 * Math.sin(realT * 6 + sd * 1.7);
+    // soft halo, dithered like the floodlight glow
+    for (let y = Math.floor(cy - rp); y <= cy + rp; y++) for (let x = Math.floor(cx - rp); x <= cx + rp; x++) {
+      const d = Math.hypot(x - cx, y - cy) / rp; if (d > 1) continue;
+      const a = (1 - d) * 0.8 * pulse, q = Math.floor(a * 5 + BAY[((y & 3) << 2) | (x & 3)]) / 5;
+      if (q > 0) blendp(x, y, 255, 220, 90, q);
+    }
+    // a four-point glint that pops in and out
+    const tw = Math.sin(realT * 4.3 + sd * 2.4);
+    if (tw > 0.2) {
+      const L = Math.round(1 + (tw - 0.2) * 0.9 * Math.max(2, rp * 0.6)), ox = Math.round(cx + sd * rp * 0.25), oy = Math.round(cy - rp * 0.3);
+      pset(ox, oy, SHINE_W);
+      for (let i = 1; i <= L; i++) { const c = i < L ? SHINE_W : SHINE_G; pset(ox + i, oy, c); pset(ox - i, oy, c); pset(ox, oy + i, c); pset(ox, oy - i, c); }
+    }
+  }
 }
 function drawWallMan(m) {
   if (m.type === 'lie') return drawLyingMan(m);
