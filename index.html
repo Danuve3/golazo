@@ -560,8 +560,15 @@ function keeperJoints(o) {
   o.shL = L(-0.17, 0.46, -0.15, 0.46, -0.17, 0.36); o.shR = L(0.17, 0.46, 0.15, 0.46, 0.17, 0.36);
   o.elL = L(-0.38, 0.3, -0.17, 0.78, -0.3, 0.05, 1); o.elR = L(0.38, 0.3, 0.17, 0.78, 0.3, 0.05, 1);
   o.haL = L(-0.5, 0.36, -0.13, 1.1, -0.2, -0.3, 1); o.haR = L(0.5, 0.36, 0.13, 1.1, 0.2, -0.3, 1);
+  if (K.sc > 0.001) for (const k in SCORP) { const q = SCORP[k], j = o[k]; j[0] = lerp(j[0], K.x + q[0] * S, K.sc); j[1] = lerp(j[1], K.y + q[1] * S, K.sc); }
   return o;
 }
+// the scorpion: diving forward face-first, hands on the grass, heels arcing up over the head
+const SCORP = {
+  hipL: [-0.1, 0], hipR: [0.1, 0], kneeL: [-0.24, 0.36], kneeR: [0.24, 0.36], footL: [-0.07, 0.76], footR: [0.07, 0.76],
+  neck: [0, -0.3], head: [0, -0.42], shL: [-0.18, -0.28], shR: [0.18, -0.28],
+  elL: [-0.34, -0.42], elR: [0.34, -0.42], haL: [-0.32, -0.62], haR: [0.32, -0.62]
+};
 const KJ = {};
 // play styles: how a keeper behaves (position, reflexes, size). Skill comes from his place in the ladder.
 const KSTYLES = {
@@ -598,6 +605,7 @@ const KEEPERS = [
   ['LEV YASHIN',          'pulpo',   [24, 22, 30],    [90, 86, 100],   { k: 'panel', w: 0.12 },   [24, 22, 30],  [24, 22, 30],    { style: 'cap', capC: [26, 24, 32], hair: HR.drk, skin: SK[0] }],
   ['BENJI PRICE',         'jefe',    [240, 240, 236], [140, 90, 220],  { k: 'sides', w: 0.7 },    [140, 90, 220], [255, 222, 70], { style: 'buzz', hair: HR.drk, skin: SK[0] }, 1, true]
 ].map(([name, arch, jersey, alt, pat, shorts, glove, look, sz, shine], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look, sz: sz || 1, shine: !!shine }));
+Object.assign(KEEPERS.find(k => k.name === 'RENÉ HIGUITA'), { scorp: true, desc: 'Sale lejos… y si le tiras a la cara, escorpión' });
 // goals needed to face keeper i: one goal each for the first eight, then two each. Benji at 30 goals.
 const kStart = i => i < 8 ? i : 8 + (i - 8) * 2;
 function keeperFor(goals) { let i = 0; while (i < KEEPERS.length - 1 && goals >= kStart(i + 1)) i++; return KEEPERS[i]; }
@@ -621,7 +629,7 @@ function dress(m) {
   if (style === 'afro' || style === 'buzz') hair = Math.random() < 0.7 ? [20, 16, 18] : hair;
   m.look = { style, hair, beard: Math.random() < 0.28, h: rnd(0.95, 1.06), ph: rnd(0, 6.28), skin };
 }
-K.type = KEEPERS[0]; K.s = 1; K.reach = 1; K.gside = 1;
+K.type = KEEPERS[0]; K.sc = 0; K.s = 1; K.reach = 1; K.gside = 1;
 function ballVsKeeper() {
   if (ball.held || Math.abs(ball.z - K.z) > 0.6 || Math.abs(ball.x - K.x) > 2.4 * K.s * K.reach) return;
   keeperJoints(KJ);
@@ -638,6 +646,12 @@ function ballVsKeeper() {
   if (!imp) return;
   f.keeper = true; f.last = 'keeper';
   const relV = imp;
+  if (K.mode === 'scorp') {
+    f.scorp = true;
+    if (part === 'leg') { ball.vz = Math.max(ball.vz, 5 + relV * 0.25); ball.vy = Math.max(ball.vy, 3.5); }
+    sThud(relV, 120); buzz([20, 40, 20]); spawnBurst(ball.x, ball.y, ball.z, 10, C.cream, 2.5);
+    return;
+  }
   const nearHands = (part === 'armL' || part === 'armR') ? CP.t > 0.5 : part === 'body';
   const steady = K.mode === 'set' || K.mode === 'ready' || K.mode === 'watch';
   if (nearHands && relV < K.p.catchV * (steady ? 1 : 0.62) && !f.outcome && ball.z > -0.05) {
@@ -717,7 +731,7 @@ function stepBall(dt) {
   if (f) {
     ballVsWall(); ballVsKeeper(); ballVsFrame();
     // keeper plane crossing: nutmeg
-    if (pz > K.z && b.z <= K.z && !f.keeper && K.mode !== 'dive' && K.mode !== 'push' && Math.abs(b.x - K.x) < 0.17 && b.y < 0.42 && K.pose < 0.4) f.nutmeg = true;
+    if (pz > K.z && b.z <= K.z && !f.keeper && K.mode !== 'dive' && K.mode !== 'push' && K.mode !== 'scorp' && Math.abs(b.x - K.x) < 0.17 && b.y < 0.42 && K.pose < 0.4) f.nutmeg = true;
     // goal line
     if (pz > 0 && b.z <= 0 && !f.crossed) {
       f.crossed = true; f.crossX = b.x; f.crossY = b.y; f.crossV = Math.hypot(b.vx, b.vy, b.vz);
@@ -778,7 +792,7 @@ function keeperPlace() {
 }
 function keeperReset() {
   keeperPlace();
-  Object.assign(K, { x: K.tx, y: 0.98 * K.s, vx: 0, vy: 0, th: 0, thT: 0, mode: 'ready', pose: 0, low: 0, decided: false, jumped: false });
+  Object.assign(K, { x: K.tx, y: 0.98 * K.s, vx: 0, vy: 0, th: 0, thT: 0, mode: 'ready', pose: 0, low: 0, sc: 0, decided: false, jumped: false });
 }
 function keeperDecide() {
   K.decided = true;
@@ -788,8 +802,14 @@ function keeperDecide() {
   const py = clamp(pr.y + gauss() * p.err * 0.22, 0.12, 3.2);
   if (Math.abs(px) > GOAL_HW + 0.8 || py > GOAL_H + 0.6) { K.mode = 'watch'; return; }
   const dx = px - K.x;
+  if (K.type.scorp && Math.abs(dx) < 0.85 && py > 0.9 && py < 1.85 && Math.random() < 0.7) { scorpion(px, py, pr.t); return; }
   if (Math.abs(dx) < 0.58 * K.s && py < 2.15 * K.s) { K.mode = 'set'; K.setX = px; K.setY = py; K.jumped = false; return; }
   dive(px, py, Math.max(0.08, pr.t - 0.07));
+}
+function scorpion(px, py, tr) {
+  K.mode = 'scorp'; K.scT = 0; K.scDur = clamp(tr * 0.9, 0.2, 0.55); K.scX = px;
+  K.scY = clamp(py - 0.8 * K.s, 0.5 * K.s, 0.98 * K.s); K.vy = 0;
+  if (flight) flight.scorpTry = true;
 }
 function dive(px, py, tr) {
   const p = K.p, dx = px - K.x, sg = Math.sign(dx) || 1;
@@ -843,6 +863,16 @@ function keeperUpdate(dt) {
       if (K.setY > 1.85 * K.s && !K.jumped) { K.jumped = true; K.vy = Math.min(p.vy, Math.sqrt(2 * G * (K.setY - 1.8 * K.s))); }
       K.vy -= G * dt; K.y += K.vy * dt;
       const gy = (low ? 0.62 : 0.97) * K.s; if (K.y < gy) { K.y = lerp(K.y, gy, e(25)); if (K.vy < 0) K.vy = 0; }
+      break;
+    }
+    case 'scorp': {
+      K.scT += dt; const k = clamp(K.scT / K.scDur, 0, 1);
+      K.sc = k * k * (3 - 2 * k);
+      K.vx = clamp((K.scX - K.x) * 8, -3, 3); K.x += K.vx * dt;
+      // after the kick he collapses onto the grass
+      if (K.scT > K.scDur + 0.7) K.scY = 0.4 * K.s;
+      K.y = lerp(K.y, K.scY, e(14)); K.th = lerp(K.th, 0, e(14));
+      K.pose = lerp(K.pose, 0, e(10)); K.low = lerp(K.low, 0, e(10));
       break;
     }
     case 'watch': {
@@ -1114,7 +1144,7 @@ function newKick(first) {
   // announce special kicks and new goalkeepers
   const kLabel = 'PORTERO ' + (T.i + 1) + ' DE ' + KEEPERS.length;
   if (kind !== 'falta') showMsg(KINDS[kind].name, [KINDS[kind].sub, T !== prevType || first ? T.name : ''].filter(Boolean), 'info');
-  else if (T !== prevType && !first) showMsg(T.name, [kLabel, KSTYLES[T.arch].desc], 'info');
+  else if (T !== prevType && !first) showMsg(T.name, [kLabel, T.desc || KSTYLES[T.arch].desc], 'info');
   setKeeperCard(T, T !== prevType);
   transT = first ? 1 : 0;
   if (first) Object.assign(cam, camBase);
@@ -1157,6 +1187,7 @@ function finishGoal() {
   if (Math.abs(f.crossX) > GOAL_HW - 0.75 && f.crossY > GOAL_H - 0.65) bon.push(['ESCUADRA', 200]);
   if (f.post) bon.push([f.bar ? 'LARGUERO Y DENTRO' : 'PALO Y DENTRO', 150]);
   if (f.keeper) bon.push(['SE LE ESCAPA', 100]);
+  if (f.scorpTry && !f.scorp) bon.push(['ESCORPIÓN FALLIDO', 150]);
   if (f.nutmeg) bon.push(['¡CAÑO!', 250]);
   if (f.under) bon.push(['POR DEBAJO DE LA BARRERA', 200]);
   if (Math.abs(f.wy0) > 42) bon.push(['ROSCA', 120]);
@@ -1203,6 +1234,7 @@ function finishFail(label) {
 }
 function failLabel() {
   const f = flight;
+  if (f.scorp) return '¡ESCORPIÓN!';
   if (f.last === 'keeper') return '¡PARADÓN!';
   if (f.last === 'wall') return 'BARRERA';
   if (f.last === 'post') return f.bar ? '¡LARGUERO!' : '¡AL PALO!';
@@ -1844,7 +1876,7 @@ function simStep(dt) {
       flight = { outcome: null, kind: 'rodando' }; finishFail('SE TE ESCAPÓ');
     }
   }
-  if (recOn && (recCnt++ & 3) === 0 && rec.length < 600) rec.push({ bx: ball.x, by: ball.y, bz: ball.z, m: ball.m.slice(), kx: K.x, ky: K.y, kth: K.th, kp: K.pose, kl: K.low, w: wall.map(m => [m.x, m.y, m.z, m.run || 0]), na: net.amp, nx: net.x, ny: net.y });
+  if (recOn && (recCnt++ & 3) === 0 && rec.length < 600) rec.push({ bx: ball.x, by: ball.y, bz: ball.z, m: ball.m.slice(), kx: K.x, ky: K.y, kth: K.th, kp: K.pose, kl: K.low, ks: K.sc, w: wall.map(m => [m.x, m.y, m.z, m.run || 0]), na: net.amp, nx: net.x, ny: net.y });
 }
 const RP_CAMS = { red: 'CÁMARA DE RED', lateral: 'CÁMARA LATERAL', balon: 'CÁMARA BALÓN' };
 function startReplay() {
@@ -1873,7 +1905,7 @@ function updReplay(dt) {
   const A = rec[i0], B = rec[i1];
   ball.x = lerp(A.bx, B.bx, a); ball.y = lerp(A.by, B.by, a); ball.z = lerp(A.bz, B.bz, a);
   for (let k = 0; k < 9; k++) ball.m[k] = A.m[k];
-  K.x = lerp(A.kx, B.kx, a); K.y = lerp(A.ky, B.ky, a); K.th = lerp(A.kth, B.kth, a); K.pose = lerp(A.kp, B.kp, a); K.low = lerp(A.kl, B.kl, a);
+  K.x = lerp(A.kx, B.kx, a); K.y = lerp(A.ky, B.ky, a); K.th = lerp(A.kth, B.kth, a); K.pose = lerp(A.kp, B.kp, a); K.low = lerp(A.kl, B.kl, a); K.sc = lerp(A.ks || 0, B.ks || 0, a);
   for (let j = 0; j < wall.length && j < A.w.length; j++) { wall[j].x = lerp(A.w[j][0], B.w[j][0], a); wall[j].y = lerp(A.w[j][1], B.w[j][1], a); wall[j].z = lerp(A.w[j][2], B.w[j][2], a); wall[j].run = A.w[j][3]; }
   net.amp = lerp(A.na, B.na, a); net.x = A.nx; net.y = A.ny;
   trail.length = 0; for (let k = Math.max(0, i0 - 14); k <= i0; k++) trail.push([rec[k].bx, rec[k].by, rec[k].bz]);
