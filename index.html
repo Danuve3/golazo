@@ -576,27 +576,28 @@ const SK = [[236, 196, 156], [204, 150, 108], [140, 96, 64]];
 const HR = { blk: [20, 16, 18], drk: [38, 26, 22], brn: [110, 64, 34], bld: [226, 190, 110], gry: [150, 146, 150] };
 // the ladder: from the worst to the best. Each one appears after enough goals.
 const KEEPERS = [
-  ['LORIS KARIUS',        'adivino', [255, 110, 90],  [70, 26, 44],    { k: 'half' },             [44, 20, 30],  [255, 230, 120], { style: 'short', hair: HR.bld, skin: SK[0] }],
-  ['ROY CARROLL',         'gato',    [150, 196, 120], [34, 52, 40],    { k: 'sides', w: 0.7 },    [34, 52, 40],  [250, 250, 244], { style: 'buzz', hair: HR.brn, skin: SK[0] }],
-  ['SCOTT CARSON',        'gigante', [200, 210, 220], [60, 70, 110],   { k: 'panel', w: 0.2 },    [60, 70, 110], [255, 200, 74],  { style: 'buzz', hair: HR.drk, skin: SK[0] }],
+  // name, style, jersey, alt, pattern, shorts, gloves, look (hair, beard, moustache...), size
+  ['LORIS KARIUS',        'adivino', [170, 230, 70],  [30, 40, 34],    { k: 'sides', w: 0.7 },    [30, 40, 34],  [255, 120, 60],  { style: 'short', hair: [150, 110, 70], beard: true, skin: SK[0] }],
+  ['ROY CARROLL',         'gato',    [150, 196, 120], [34, 52, 40],    { k: 'sides', w: 0.7 },    [34, 52, 40],  [250, 250, 244], { style: 'buzz', hair: HR.drk, skin: SK[0] }],
+  ['SCOTT CARSON',        'gigante', [200, 210, 220], [60, 70, 110],   { k: 'panel', w: 0.2 },    [60, 70, 110], [255, 200, 74],  { style: 'buzz', hair: HR.brn, skin: SK[0] }],
   ['DAVID JAMES',         'pulpo',   [90, 200, 255],  [244, 242, 232], { k: 'stripes', n: 3 },    [20, 30, 70],  [255, 120, 180], { style: 'bald', hair: HR.blk, skin: SK[2] }],
-  ['SANTIAGO CAÑIZARES',  'gato',    [255, 196, 64],  [40, 32, 78],    { k: 'sides', w: 0.74 },   [34, 28, 66],  [124, 240, 200], { style: 'short', hair: HR.bld, skin: SK[0] }],
-  ['ANDONI ZUBIZARRETA',  'gigante', [70, 70, 84],    [214, 62, 66],   { k: 'panel', w: 0.22 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
-  ['JORGE CAMPOS',        'libero',  [255, 70, 170],  [90, 240, 120],  { k: 'hoops', n: 5 },      [40, 30, 90],  [255, 230, 60],  { style: 'band', hair: HR.blk, bandC: [255, 230, 60], skin: SK[1] }],
-  ['RENÉ HIGUITA',        'libero',  [124, 240, 200], [26, 92, 92],    { k: 'hoops', n: 4 },      [18, 58, 60],  [255, 200, 74],  { style: 'long', hair: HR.blk, skin: SK[1] }],
-  ['DAVID DE GEA',        'pulpo',   [130, 220, 110], [30, 40, 34],    { k: 'stripes', n: 2 },    [30, 40, 34],  [255, 140, 60],  { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
+  ['SANTIAGO CAÑIZARES',  'gato',    [255, 196, 64],  [40, 32, 78],    { k: 'sides', w: 0.74 },   [34, 28, 66],  [124, 240, 200], { style: 'buzz', hair: [244, 226, 160], skin: SK[0] }],
+  ['ANDONI ZUBIZARRETA',  'gigante', [70, 70, 84],    [214, 62, 66],   { k: 'panel', w: 0.22 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.drk, skin: SK[0] }],
+  ['JORGE CAMPOS',        'libero',  [255, 70, 170],  [90, 240, 120],  { k: 'hoops', n: 5 },      [40, 30, 90],  [255, 230, 60],  { style: 'short', hair: HR.blk, skin: SK[1] }, 0.9],
+  ['RENÉ HIGUITA',        'libero',  [60, 110, 220],  [255, 210, 60],  { k: 'hoops', n: 4 },      [20, 30, 70],  [255, 210, 60],  { style: 'afro', mane: true, mus: true, hair: HR.blk, skin: SK[1] }],
+  ['DAVID DE GEA',        'pulpo',   [130, 220, 110], [30, 40, 34],    { k: 'stripes', n: 2 },    [30, 40, 34],  [255, 140, 60],  { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }, 1.03],
   ['JAN OBLAK',           'gato',    [255, 150, 60],  [30, 28, 46],    { k: 'sides', w: 0.66 },   [30, 28, 46],  [124, 240, 200], { style: 'short', hair: HR.brn, skin: SK[0] }],
   ['THIBAUT COURTOIS',    'gigante', [150, 110, 230], [255, 200, 74],  { k: 'panel', w: 0.2 },    [30, 20, 60],  [250, 250, 244], { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
-  ['OLIVER KAHN',         'gato',    [70, 140, 90],   [240, 236, 226], { k: 'sides', w: 0.7 },    [24, 30, 28],  [255, 200, 74],  { style: 'short', hair: HR.bld, skin: SK[0] }],
-  ['PETER SCHMEICHEL',    'pulpo',   [230, 210, 60],  [34, 30, 46],    { k: 'stripes', n: 4 },    [34, 30, 46],  [214, 62, 66],   { style: 'buzz', hair: HR.bld, skin: SK[0] }],
-  ['MANUEL NEUER',        'libero',  [58, 104, 210],  [236, 238, 232], { k: 'half' },             [26, 40, 90],  [255, 160, 40],  { style: 'short', hair: HR.brn, skin: SK[0] }],
-  ['IKER CASILLAS',       'gato',    [44, 156, 96],   [246, 240, 228], { k: 'sides', w: 0.62 },   [32, 40, 38],  [255, 230, 120], { style: 'short', hair: HR.drk, skin: SK[0] }],
+  ['OLIVER KAHN',         'gato',    [130, 136, 140], [70, 150, 90],   { k: 'sides', w: 0.7 },    [24, 30, 28],  [255, 200, 74],  { style: 'buzz', hair: HR.bld, skin: SK[0] }, 1.03],
+  ['PETER SCHMEICHEL',    'pulpo',   [230, 210, 60],  [34, 30, 46],    { k: 'stripes', n: 4 },    [34, 30, 46],  [214, 62, 66],   { style: 'short', hair: HR.bld, skin: SK[0] }, 1.06],
+  ['MANUEL NEUER',        'libero',  [60, 170, 100],  [236, 238, 232], { k: 'half' },             [26, 50, 40],  [255, 160, 40],  { style: 'short', hair: [176, 136, 84], skin: SK[0] }, 1.03],
+  ['IKER CASILLAS',       'gato',    [44, 156, 96],   [246, 240, 228], { k: 'sides', w: 0.62 },   [32, 40, 38],  [255, 230, 120], { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
   ['GORDON BANKS',        'gato',    [246, 222, 70],  [30, 30, 40],    { k: 'panel', w: 0.24 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.brn, skin: SK[0] }],
-  ['DINO ZOFF',           'gato',    [120, 120, 130], [246, 240, 228], { k: 'hoops', n: 3 },      [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.gry, skin: SK[1] }],
+  ['DINO ZOFF',           'gato',    [130, 130, 138], [246, 240, 228], { k: 'sides', w: 0.74 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.gry, skin: SK[1] }],
   ['GIANLUIGI BUFFON',    'gigante', [40, 40, 52],    [255, 200, 74],  { k: 'sides', w: 0.6 },    [40, 40, 52],  [255, 200, 74],  { style: 'long', hair: HR.drk, beard: true, skin: SK[1] }],
-  ['LEV YASHIN',          'pulpo',   [24, 22, 30],    [90, 86, 100],   { k: 'panel', w: 0.12 },   [24, 22, 30],  [24, 22, 30],    { style: 'short', hair: HR.drk, skin: SK[0] }],
-  ['BENJI PRICE',         'jefe',    [255, 210, 70],  [214, 62, 66],   { k: 'sides', w: 0.7 },    [214, 62, 66], [250, 250, 244], { style: 'short', hair: HR.brn, skin: SK[0] }]
-].map(([name, arch, jersey, alt, pat, shorts, glove, look], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look }));
+  ['LEV YASHIN',          'pulpo',   [24, 22, 30],    [90, 86, 100],   { k: 'panel', w: 0.12 },   [24, 22, 30],  [24, 22, 30],    { style: 'cap', capC: [26, 24, 32], hair: HR.drk, skin: SK[0] }],
+  ['BENJI PRICE',         'jefe',    [240, 240, 236], [140, 90, 220],  { k: 'sides', w: 0.7 },    [140, 90, 220], [255, 200, 74], { style: 'buzz', hair: HR.drk, skin: SK[0] }]
+].map(([name, arch, jersey, alt, pat, shorts, glove, look, sz], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look, sz: sz || 1 }));
 // goals needed to face keeper i: one goal each for the first eight, then two each. Benji at 30 goals.
 const kStart = i => i < 8 ? i : 8 + (i - 8) * 2;
 function keeperFor(goals) { let i = 0; while (i < KEEPERS.length - 1 && goals >= kStart(i + 1)) i++; return KEEPERS[i]; }
@@ -1093,7 +1094,7 @@ function newKick(first) {
   const T = keeperFor(n);
   // a sweeper can't play far off his line on wide kicks
   let kt = T.arch; if (kt === 'libero' && (kind === 'corner' || kind === 'escorada')) kt = 'gato';
-  const ST = KSTYLES[kt]; K.type = T; K.s = ST.s; K.reach = ST.reach; K.z = ST.z;
+  const ST = KSTYLES[kt]; K.type = T; K.s = ST.s * T.sz; K.reach = ST.reach; K.z = ST.z;
   // skill climbs keeper by keeper: 0 for the first, 1 for Yashin, beyond 1 for Benji
   const s = T.i < KEEPERS.length - 1 ? T.i / (KEEPERS.length - 2) : 1.15;
   K.p = { tau: 0.42 - 0.2 * s + ST.react, vmax: (3.3 + 1.35 * s) * ST.speed, vy: (3.1 + 0.9 * s) * ST.jump * Math.sqrt(ST.s), err: (1.05 - 0.62 * s) * ST.err, catchV: (10 + 5 * s) * ST.catch };
@@ -1511,7 +1512,7 @@ const l3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[
 // a head in its own frame: Hf(X, Y) maps face-left/right and up into the world
 function pushHead(parts, Hf, lk, back) {
   const st = lk.style, hair = tones(lk.hair), skin = tones(lk.skin);
-  if (back) { if (st === 'long') parts.push([Hf(0, 0.02), Hf(0, -0.22), 0.13, 0.1, hair]); return; }
+  if (back) { if (st === 'long' || lk.mane) parts.push([Hf(0, 0.02), Hf(0, -0.22), 0.13, 0.1, hair]); return; }
   if (st === 'afro') parts.push([Hf(0, 0.04), Hf(0, 0.04), 0.155, 0.155, hair]);
   else if (st === 'short' || st === 'band' || st === 'bun' || st === 'long') parts.push([Hf(0, 0.024), Hf(0, 0.024), 0.122, 0.122, hair]);
   else if (st === 'buzz') parts.push([Hf(0, 0.012), Hf(0, 0.012), 0.118, 0.118, hair]);
@@ -1521,6 +1522,7 @@ function pushHead(parts, Hf, lk, back) {
   const bare = st === 'bald' || st === 'mohawk';
   parts.push([Hf(0, bare ? 0 : -0.016), Hf(0, bare ? -0.004 : -0.02), bare ? 0.116 : 0.1, bare ? 0.114 : 0.1, skin]);
   if (lk.beard) parts.push([Hf(-0.05, -0.066), Hf(0.05, -0.066), 0.045, 0.045, hair, null, true]);
+  if (lk.mus) parts.push([Hf(-0.034, -0.046), Hf(0.034, -0.046), 0.02, 0.02, hair, null, true]);
   if (st === 'cap') parts.push([Hf(-0.105, 0.032), Hf(0.105, 0.032), 0.03, 0.03, tones(lk.capC)]);
   if (st === 'band') parts.push([Hf(-0.105, 0.048), Hf(0.105, 0.048), 0.024, 0.024, tones(lk.bandC), null, true]);
 }
@@ -1533,7 +1535,7 @@ function faceDetail(Hf, lk) {
     if (proj(e[0], e[1], e[2], PP)) pset(PP.x, PP.y, INK);
     if (rp >= 3 && lk.style !== 'cap' && lk.style !== 'band') { const b = Hf(sd * 0.046, 0.03); if (proj(b[0], b[1], b[2], PP)) { pset(PP.x, PP.y, brow); pset(PP.x + (sd > 0 ? 1 : -1), PP.y, brow); } }
   }
-  if (rp >= 3.4 && !lk.beard) { const m = Hf(0, -0.058); if (proj(m[0], m[1], m[2], PP)) pset(PP.x, PP.y, tones(lk.skin)[2]); }
+  if (rp >= 3.4 && !lk.beard && !lk.mus) { const m = Hf(0, -0.058); if (proj(m[0], m[1], m[2], PP)) pset(PP.x, PP.y, tones(lk.skin)[2]); }
 }
 function drawKeeper() {
   const J = keeperJoints(KJ), z = K.z, T = K.type, S = K.s, sn = Math.sin(K.th), cs = Math.cos(K.th);
