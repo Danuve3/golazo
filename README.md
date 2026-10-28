@@ -1,6 +1,6 @@
 # Golazo Infinito
 
-Arcade de tiros libres infinitos para móvil, en pixel art. Física real de balón (rosca por efecto Magnus, resistencia del aire, bote en el césped, postes y red), barrera que salta, defensas que salen a tapar, cinco porteros con personalidad y un ranking público.
+Arcade de tiros libres infinitos para móvil, en pixel art. Física real de balón (rosca por efecto Magnus, resistencia del aire, bote en el césped, postes y red), barrera que salta, defensas que salen a tapar, una escalera de 20 porteros que van de peor a mejor (de Karius hasta Benji Price) y un ranking público.
 
 Todo el juego es un único `index.html` sin dependencias ni paso de compilación, así que se publica tal cual en GitHub Pages.
 

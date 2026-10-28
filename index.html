@@ -72,7 +72,15 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 #best{font-family:var(--f-num);font-size:11px;letter-spacing:.06em;opacity:.8}
 #info{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-num);font-size:12px;letter-spacing:.06em}
 #dist{background:rgba(12,10,32,.55);padding:2px 6px}
-#kname{background:rgba(12,10,32,.55);padding:2px 6px;border-left:6px solid var(--gold)}
+#keeper{align-self:flex-start;display:flex;flex-direction:column;gap:4px;margin-top:2px;max-width:100%;background:rgba(12,10,32,.72);padding:5px 10px 7px;border-left:7px solid var(--gold);box-shadow:3px 3px 0 var(--ink);transform-origin:left center}
+#keeper.new{animation:knew .6s steps(6)}
+@keyframes knew{0%{transform:translateX(-24px) scale(1.25);opacity:0}40%{transform:scale(1.12);opacity:1}100%{transform:none}}
+#klvl{font-family:var(--f-num);font-size:10px;letter-spacing:.12em;opacity:.85}
+#kname{font-family:var(--f-disp);font-weight:700;font-size:clamp(19px,6vw,26px);line-height:1;letter-spacing:.02em;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#kbar{display:block;height:4px;background:rgba(247,237,211,.18)}
+#kbar i{display:block;height:100%;width:5%;background:var(--coral)}
+#keeper.boss #klvl{color:var(--coral);opacity:1}
+#keeper.boss #kname{color:var(--cream);text-shadow:2px 2px 0 var(--coral),4px 4px 0 var(--ink)}
 #wind{display:flex;align-items:center;gap:6px;background:rgba(12,10,32,.55);padding:2px 6px}
 #wind[hidden]{display:none!important}
 #warr{width:12px;height:12px;display:inline-block}
@@ -217,7 +225,8 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
           <div id="best" class="hs">MEJOR 0</div>
         </div>
       </div>
-      <div id="info" class="hs"><span id="dist">24 M</span><span id="kname">EL GATO</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
+      <div id="info" class="hs"><span id="dist">24 M</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
+      <div id="keeper" class="hs" aria-live="polite"><span id="klvl">PORTERO 1/20</span><span id="kname">LORIS KARIUS</span><span id="kbar"><i id="kfill"></i></span></div>
     </div>
     <div id="msg"><div id="msgMain"></div><div id="msgSub"></div></div>
     <div id="hint" class="hs" hidden>DESLIZA HACIA LA PORTERÍA<br>CURVA EL GESTO PARA DAR ROSCA</div>
@@ -554,13 +563,43 @@ function keeperJoints(o) {
   return o;
 }
 const KJ = {};
-const KTYPES = {
-  gato:    { name: 'EL GATO', desc: 'Rápido y fiable', s: 1, z: 0.45, react: 0, speed: 1, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.09, jersey: [255, 196, 64], alt: [40, 32, 78], pat: { k: 'sides', w: 0.74 }, shorts: [34, 28, 66], glove: [124, 240, 200], sock: [255, 186, 52], num: [40, 32, 78], look: { style: 'short', hair: [38, 26, 22], skin: [204, 150, 108] } },
-  libero:  { name: 'EL LÍBERO', desc: 'Juega muy adelantado: prueba la vaselina', s: 1, z: 2.7, react: -0.03, speed: 1.08, jump: 1, err: 1, catch: 0.9, reach: 1, gamble: 0.05, jersey: [124, 240, 200], alt: [26, 92, 92], pat: { k: 'hoops', n: 5 }, shorts: [18, 58, 60], glove: [255, 200, 74], sock: [124, 240, 200], num: [18, 58, 60], look: { style: 'band', hair: [120, 70, 36], bandC: [255, 200, 74], skin: [236, 196, 156] } },
-  gigante: { name: 'EL GIGANTE', desc: 'Enorme pero lento', s: 1.2, z: 0.4, react: 0.05, speed: 0.76, jump: 0.85, err: 1, catch: 1.1, reach: 1, gamble: 0.04, jersey: [150, 110, 230], alt: [255, 200, 74], pat: { k: 'panel', w: 0.2 }, shorts: [30, 20, 60], glove: [250, 250, 244], sock: [150, 110, 230], num: [255, 200, 74], look: { style: 'bald', beard: true, hair: [24, 18, 18], skin: [140, 96, 64] } },
-  adivino: { name: 'EL ADIVINO', desc: 'Casi siempre se tira al mismo lado', s: 1, z: 0.45, react: 0, speed: 1.05, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.6, jersey: [255, 110, 90], alt: [70, 26, 44], pat: { k: 'half' }, shorts: [44, 20, 30], glove: [255, 230, 120], sock: [255, 110, 90], num: [250, 246, 236], look: { style: 'long', hair: [226, 190, 110], skin: [236, 196, 156] } },
-  pulpo:   { name: 'EL PULPO', desc: 'Brazos larguísimos, reacciona tarde', s: 1.04, z: 0.5, react: 0.07, speed: 0.95, jump: 1, err: 1.1, catch: 1.35, reach: 1.22, gamble: 0.05, jersey: [90, 200, 255], alt: [244, 242, 232], pat: { k: 'stripes', n: 3 }, shorts: [20, 30, 70], glove: [255, 120, 180], sock: [90, 200, 255], num: [20, 30, 70], look: { style: 'cap', capC: [20, 30, 70], hair: [20, 16, 18], skin: [204, 150, 108] } }
+// play styles: how a keeper behaves (position, reflexes, size). Skill comes from his place in the ladder.
+const KSTYLES = {
+  gato:    { desc: 'Rápido y fiable', s: 1, z: 0.45, react: 0, speed: 1, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.09 },
+  libero:  { desc: 'Juega muy adelantado: prueba la vaselina', s: 1, z: 2.7, react: -0.03, speed: 1.08, jump: 1, err: 1, catch: 0.9, reach: 1, gamble: 0.05 },
+  gigante: { desc: 'Enorme pero lento', s: 1.2, z: 0.4, react: 0.05, speed: 0.76, jump: 0.85, err: 1, catch: 1.1, reach: 1, gamble: 0.04 },
+  adivino: { desc: 'Casi siempre se tira al mismo lado', s: 1, z: 0.45, react: 0, speed: 1.05, jump: 1, err: 1, catch: 1, reach: 1, gamble: 0.6 },
+  pulpo:   { desc: 'Brazos larguísimos', s: 1.04, z: 0.5, react: 0.07, speed: 0.95, jump: 1, err: 1.1, catch: 1.35, reach: 1.22, gamble: 0.05 },
+  jefe:    { desc: 'Jefe final: lo para todo', s: 1.04, z: 0.45, react: -0.02, speed: 1.1, jump: 1.06, err: 0.85, catch: 1.2, reach: 1.06, gamble: 0.02 }
 };
+const SK = [[236, 196, 156], [204, 150, 108], [140, 96, 64]];
+const HR = { blk: [20, 16, 18], drk: [38, 26, 22], brn: [110, 64, 34], bld: [226, 190, 110], gry: [150, 146, 150] };
+// the ladder: from the worst to the best. Each one appears after enough goals.
+const KEEPERS = [
+  ['LORIS KARIUS',        'adivino', [255, 110, 90],  [70, 26, 44],    { k: 'half' },             [44, 20, 30],  [255, 230, 120], { style: 'short', hair: HR.bld, skin: SK[0] }],
+  ['ROY CARROLL',         'gato',    [150, 196, 120], [34, 52, 40],    { k: 'sides', w: 0.7 },    [34, 52, 40],  [250, 250, 244], { style: 'buzz', hair: HR.brn, skin: SK[0] }],
+  ['SCOTT CARSON',        'gigante', [200, 210, 220], [60, 70, 110],   { k: 'panel', w: 0.2 },    [60, 70, 110], [255, 200, 74],  { style: 'buzz', hair: HR.drk, skin: SK[0] }],
+  ['DAVID JAMES',         'pulpo',   [90, 200, 255],  [244, 242, 232], { k: 'stripes', n: 3 },    [20, 30, 70],  [255, 120, 180], { style: 'bald', hair: HR.blk, skin: SK[2] }],
+  ['SANTIAGO CAÑIZARES',  'gato',    [255, 196, 64],  [40, 32, 78],    { k: 'sides', w: 0.74 },   [34, 28, 66],  [124, 240, 200], { style: 'short', hair: HR.bld, skin: SK[0] }],
+  ['ANDONI ZUBIZARRETA',  'gigante', [70, 70, 84],    [214, 62, 66],   { k: 'panel', w: 0.22 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
+  ['JORGE CAMPOS',        'libero',  [255, 70, 170],  [90, 240, 120],  { k: 'hoops', n: 5 },      [40, 30, 90],  [255, 230, 60],  { style: 'band', hair: HR.blk, bandC: [255, 230, 60], skin: SK[1] }],
+  ['RENÉ HIGUITA',        'libero',  [124, 240, 200], [26, 92, 92],    { k: 'hoops', n: 4 },      [18, 58, 60],  [255, 200, 74],  { style: 'long', hair: HR.blk, skin: SK[1] }],
+  ['DAVID DE GEA',        'pulpo',   [130, 220, 110], [30, 40, 34],    { k: 'stripes', n: 2 },    [30, 40, 34],  [255, 140, 60],  { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
+  ['JAN OBLAK',           'gato',    [255, 150, 60],  [30, 28, 46],    { k: 'sides', w: 0.66 },   [30, 28, 46],  [124, 240, 200], { style: 'short', hair: HR.brn, skin: SK[0] }],
+  ['THIBAUT COURTOIS',    'gigante', [150, 110, 230], [255, 200, 74],  { k: 'panel', w: 0.2 },    [30, 20, 60],  [250, 250, 244], { style: 'short', hair: HR.drk, beard: true, skin: SK[0] }],
+  ['OLIVER KAHN',         'gato',    [70, 140, 90],   [240, 236, 226], { k: 'sides', w: 0.7 },    [24, 30, 28],  [255, 200, 74],  { style: 'short', hair: HR.bld, skin: SK[0] }],
+  ['PETER SCHMEICHEL',    'pulpo',   [230, 210, 60],  [34, 30, 46],    { k: 'stripes', n: 4 },    [34, 30, 46],  [214, 62, 66],   { style: 'buzz', hair: HR.bld, skin: SK[0] }],
+  ['MANUEL NEUER',        'libero',  [58, 104, 210],  [236, 238, 232], { k: 'half' },             [26, 40, 90],  [255, 160, 40],  { style: 'short', hair: HR.brn, skin: SK[0] }],
+  ['IKER CASILLAS',       'gato',    [44, 156, 96],   [246, 240, 228], { k: 'sides', w: 0.62 },   [32, 40, 38],  [255, 230, 120], { style: 'short', hair: HR.drk, skin: SK[0] }],
+  ['GORDON BANKS',        'gato',    [246, 222, 70],  [30, 30, 40],    { k: 'panel', w: 0.24 },   [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.brn, skin: SK[0] }],
+  ['DINO ZOFF',           'gato',    [120, 120, 130], [246, 240, 228], { k: 'hoops', n: 3 },      [30, 30, 40],  [250, 250, 244], { style: 'short', hair: HR.gry, skin: SK[1] }],
+  ['GIANLUIGI BUFFON',    'gigante', [40, 40, 52],    [255, 200, 74],  { k: 'sides', w: 0.6 },    [40, 40, 52],  [255, 200, 74],  { style: 'long', hair: HR.drk, beard: true, skin: SK[1] }],
+  ['LEV YASHIN',          'pulpo',   [24, 22, 30],    [90, 86, 100],   { k: 'panel', w: 0.12 },   [24, 22, 30],  [24, 22, 30],    { style: 'short', hair: HR.drk, skin: SK[0] }],
+  ['BENJI PRICE',         'jefe',    [255, 210, 70],  [214, 62, 66],   { k: 'sides', w: 0.7 },    [214, 62, 66], [250, 250, 244], { style: 'short', hair: HR.brn, skin: SK[0] }]
+].map(([name, arch, jersey, alt, pat, shorts, glove, look], i) => ({ i, name, arch, jersey, alt, pat, shorts, glove, sock: jersey, num: alt, look }));
+// goals needed to face keeper i: one goal each for the first eight, then two each. Benji at 30 goals.
+const kStart = i => i < 8 ? i : 8 + (i - 8) * 2;
+function keeperFor(goals) { let i = 0; while (i < KEEPERS.length - 1 && goals >= kStart(i + 1)) i++; return KEEPERS[i]; }
 let adivinoSide = 1;
 const WKITS = [
   { shirt: [214, 62, 66], alt: [246, 240, 228], pat: { k: 'stripes', n: 3 }, shorts: [246, 240, 228], socks: [214, 62, 66], band: [246, 240, 228], collar: [246, 240, 228] },
@@ -581,7 +620,7 @@ function dress(m) {
   if (style === 'afro' || style === 'buzz') hair = Math.random() < 0.7 ? [20, 16, 18] : hair;
   m.look = { style, hair, beard: Math.random() < 0.28, h: rnd(0.95, 1.06), ph: rnd(0, 6.28), skin };
 }
-K.type = KTYPES.gato; K.s = 1; K.reach = 1; K.gside = 1;
+K.type = KEEPERS[0]; K.s = 1; K.reach = 1; K.gside = 1;
 function ballVsKeeper() {
   if (ball.held || Math.abs(ball.z - K.z) > 0.6 || Math.abs(ball.x - K.x) > 2.4 * K.s * K.reach) return;
   keeperJoints(KJ);
@@ -1051,12 +1090,14 @@ function newKick(first) {
   for (const m of wall) dress(m);
   // keeper: skill grows with goals, personality changes the way he plays
   const prevType = K.type;
-  let kt = 'gato';
-  if (n >= 3) { const ks = ['gato', 'libero', 'gigante', 'adivino', 'pulpo']; kt = ks[(Math.random() * ks.length) | 0]; if (kt === 'libero' && (kind === 'corner' || kind === 'escorada')) kt = 'gato'; }
-  const T = KTYPES[kt]; K.type = T; K.s = T.s; K.reach = T.reach; K.z = T.z;
-  const s = Math.min(1, n / 24);
-  K.p = { tau: 0.42 - 0.2 * s + T.react, vmax: (3.3 + 1.35 * s) * T.speed, vy: (3.1 + 0.9 * s) * T.jump * Math.sqrt(T.s), err: (1.05 - 0.62 * s) * T.err, catchV: (10 + 5 * s) * T.catch };
-  K.gambleAt = Math.random() < T.gamble ? K.p.tau * 0.55 : -1;
+  const T = keeperFor(n);
+  // a sweeper can't play far off his line on wide kicks
+  let kt = T.arch; if (kt === 'libero' && (kind === 'corner' || kind === 'escorada')) kt = 'gato';
+  const ST = KSTYLES[kt]; K.type = T; K.s = ST.s; K.reach = ST.reach; K.z = ST.z;
+  // skill climbs keeper by keeper: 0 for the first, 1 for Yashin, beyond 1 for Benji
+  const s = T.i < KEEPERS.length - 1 ? T.i / (KEEPERS.length - 2) : 1.15;
+  K.p = { tau: 0.42 - 0.2 * s + ST.react, vmax: (3.3 + 1.35 * s) * ST.speed, vy: (3.1 + 0.9 * s) * ST.jump * Math.sqrt(ST.s), err: (1.05 - 0.62 * s) * ST.err, catchV: (10 + 5 * s) * ST.catch };
+  K.gambleAt = Math.random() < ST.gamble ? K.p.tau * 0.55 : -1;
   K.gside = kt === 'adivino' ? (Math.random() < 0.85 ? adivinoSide : -adivinoSide) : (Math.random() < 0.5 ? -1 : 1);
   // wind
   if (n >= 4) { const m = Math.min(6, 1 + (n - 4) * 0.33) * rnd(0.45, 1), a = rnd(0, Math.PI * 2); wind.x = Math.cos(a) * m; wind.z = Math.sin(a) * m; }
@@ -1070,9 +1111,10 @@ function newKick(first) {
   Object.assign(camFrom, cam);
   setCamFor(spot);
   // announce special kicks and new goalkeepers
+  const kLabel = 'PORTERO ' + (T.i + 1) + ' DE ' + KEEPERS.length;
   if (kind !== 'falta') showMsg(KINDS[kind].name, [KINDS[kind].sub, T !== prevType || first ? T.name : ''].filter(Boolean), 'info');
-  else if (T !== prevType && !first) showMsg(T.name, [T.desc], 'info');
-  $('kname').textContent = T.name; $('kname').style.borderLeftColor = 'rgb(' + T.jersey.join(',') + ')';
+  else if (T !== prevType && !first) showMsg(T.name, [kLabel, KSTYLES[T.arch].desc], 'info');
+  setKeeperCard(T, T !== prevType);
   transT = first ? 1 : 0;
   if (first) Object.assign(cam, camBase);
   flight = null; trail.length = 0;
@@ -1082,6 +1124,15 @@ function newKick(first) {
   $('hint').hidden = shots >= 2;
   if (pending) closeContact();
   sling = null;
+}
+function setKeeperCard(T, changed) {
+  const card = $('keeper'), boss = T.i === KEEPERS.length - 1;
+  $('klvl').textContent = boss ? 'JEFE FINAL' : 'PORTERO ' + (T.i + 1) + '/' + KEEPERS.length;
+  $('kname').textContent = T.name;
+  card.style.borderLeftColor = 'rgb(' + T.jersey.join(',') + ')';
+  $('kfill').style.width = Math.round((T.i + 1) / KEEPERS.length * 100) + '%';
+  card.classList.toggle('boss', boss);
+  if (changed) { card.classList.remove('new'); void card.offsetWidth; card.classList.add('new'); }
 }
 function onAimStart() {
   if (kick.kind === 'rodando' && !kick.started) {
