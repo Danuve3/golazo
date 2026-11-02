@@ -2786,7 +2786,7 @@ $('roBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('ru
 const daySeed = day => { let h = 2166136261; for (const ch of 'golazo-reto-' + day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 const dayTxt = day => { const [, m, d] = String(day).split('-').map(Number); return d + ' ' + ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][m - 1]; };
 const retryable = e => e.code === 'network' || e.code === 'http' || e.code === 'too_fast';
-let daily = { ok: true, played: false, day: null, busy: false };
+let daily = { ok: false, played: false, day: null, busy: false };   // ok once the server confirms the challenge exists
 let lastCup = null;
 function setDailyBtn() {
   const b = $('tDaily');
@@ -2795,9 +2795,12 @@ function setDailyBtn() {
 }
 async function refreshDaily() {
   setDailyBtn();
-  if (!NET.enabled || !daily.ok || !isPlayer()) return;
-  try { const st = await NET.rpc('daily_status', { p_player: player.id }); daily.played = !!(st && st.played); daily.day = st && st.day; }
-  catch (e) { if (missingFn(e)) daily.ok = false; }
+  if (!NET.enabled) return;
+  // guests probe with an empty id: it only tells whether the challenge is installed
+  try {
+    const st = await NET.rpc('daily_status', { p_player: isPlayer() ? player.id : '00000000-0000-0000-0000-000000000000' });
+    daily.ok = true; daily.played = !!(isPlayer() && st && st.played); daily.day = st && st.day;
+  } catch (e) { if (missingFn(e)) daily.ok = false; }
   setDailyBtn();
 }
 function tMsg(t) { const m = $('tMsg'); m.hidden = !t; m.textContent = t || ''; }

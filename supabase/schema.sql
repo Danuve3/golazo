@@ -362,3 +362,6 @@ grant execute on function public.save_daily(uuid, text, bigint, int, int, int, i
 grant execute on function public.submit_rogue(uuid, text, int, int, int, int)                to anon, authenticated;
 grant execute on function public.get_rogue_leaderboard(text, int)                           to anon, authenticated;
 grant execute on function public.get_rogue_standing(uuid, text)                             to anon, authenticated;
+
+-- Que la API vea ya las funciones nuevas (refresca la caché de PostgREST)
+notify pgrst, 'reload schema';
