@@ -115,7 +115,7 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 .stats .k{font-size:10px;opacity:.7;letter-spacing:.08em}
 .stats .v{font-size:20px;font-variant-numeric:tabular-nums}
 .ttl{font-family:var(--f-disp);font-weight:700;font-size:clamp(34px,11vw,52px);color:var(--cream);text-shadow:3px 3px 0 var(--plum),6px 6px 0 var(--ink)}
-#rec{font-family:var(--f-disp);font-weight:700;font-size:20px;color:var(--ink);background:var(--mint);padding:2px 10px;box-shadow:3px 3px 0 var(--ink);animation:blink .8s steps(2) infinite}
+#rec,#roRec{font-family:var(--f-disp);font-weight:700;font-size:20px;color:var(--ink);background:var(--mint);padding:2px 10px;box-shadow:3px 3px 0 var(--ink);animation:blink .8s steps(2) infinite}
 .btn{font-family:var(--f-disp);font-weight:700;font-size:24px;color:var(--ink);background:var(--gold);border:0;padding:10px 26px 12px;box-shadow:4px 4px 0 var(--coral),8px 8px 0 var(--ink);cursor:pointer}
 .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--coral),4px 4px 0 var(--ink)}
 .modes{display:flex;box-shadow:3px 3px 0 var(--ink)}
@@ -154,7 +154,34 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 .clipbox{position:relative;width:min(58vw,280px,calc((100vh - 300px) * 9 / 16));aspect-ratio:9/16;background:var(--ink);box-shadow:0 0 0 3px var(--plum),6px 6px 0 var(--ink);flex:none;display:grid;place-items:center}
 .clipbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--night)}
 .clipbox .bstate{position:relative}
-@media (prefers-reduced-motion:reduce){#hint,.tap,#rec{animation:none}}
+@media (prefers-reduced-motion:reduce){#hint,.tap,#rec,#roRec{animation:none}}
+/* modo torneo */
+.tbtns{display:flex;flex-direction:column;align-items:center;gap:18px}
+.tbtns .btn{min-width:11em}
+.btn.alt{background:var(--mint);box-shadow:4px 4px 0 var(--plum),8px 8px 0 var(--ink);position:relative}
+.btn.alt:active{box-shadow:1px 1px 0 var(--plum),4px 4px 0 var(--ink)}
+.nw{position:absolute;right:-12px;top:-12px;font-family:var(--f-num);font-size:10px;letter-spacing:.06em;background:var(--coral);color:var(--cream);padding:2px 6px;box-shadow:2px 2px 0 var(--ink);transform:rotate(6deg)}
+#mscore{background:var(--gold);color:var(--ink);padding:2px 6px;font-weight:700;text-shadow:none}
+#cup{gap:12px;padding-top:calc(env(safe-area-inset-top,0px) + 4vh)}
+#cup .ttl{font-size:clamp(28px,9vw,40px)}
+.cnext{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:min(100%,360px);box-sizing:border-box;text-align:left;background:rgba(12,10,32,.82);padding:8px 12px 10px;border-left:7px solid var(--gold);box-shadow:3px 3px 0 var(--ink)}
+.cnext.boss{border-left-color:var(--coral)}
+.cnext .k{font-family:var(--f-num);font-size:10px;letter-spacing:.12em;opacity:.85}
+.cnext .n{font-family:var(--f-disp);font-weight:700;font-size:clamp(24px,7.5vw,32px);line-height:1;color:var(--gold)}
+.cnext.boss .n{color:var(--cream);text-shadow:2px 2px 0 var(--coral)}
+.cnext .g{font-family:var(--f-num);font-size:11px;letter-spacing:.04em;opacity:.8}
+.cnext .o{font-family:var(--f-num);font-size:12px;letter-spacing:.05em;background:var(--mint);color:var(--ink);padding:2px 7px;margin-top:2px}
+.cup{list-style:none;margin:0;padding:0;width:min(100%,360px);display:grid;gap:5px;flex:none}
+.cup li{display:grid;grid-template-columns:5.6em minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;background:rgba(12,10,32,.82);font-family:var(--f-num);font-size:12px;text-align:left;box-shadow:inset 3px 0 0 var(--plum)}
+.cup .ph{font-size:10px;opacity:.65;letter-spacing:.05em}
+.cup .rv{font-family:var(--f-disp);font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cup .rs{font-variant-numeric:tabular-nums;white-space:nowrap}
+.cup li.now{background:rgba(124,240,200,.16);box-shadow:inset 4px 0 0 var(--mint)}
+.cup li.lock{opacity:.5}
+.cup li.boss .rv{color:var(--gold)}
+.cup li.W .rs{color:var(--mint)}
+.cup li.D .rs{color:var(--gold)}
+.cup li.L .rs{color:var(--coral)}
 .screen.form{cursor:default;touch-action:auto;overflow-y:auto;background:linear-gradient(to bottom,rgba(5,4,15,.93),rgba(5,4,15,.88) 60%,rgba(5,4,15,.95));justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
 .logo.sm .a{font-size:clamp(44px,14vw,66px)}
 .logo.sm .z{font-size:clamp(15px,4.8vw,22px);margin-top:10px}
@@ -225,7 +252,7 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
           <div id="best" class="hs">MEJOR 0</div>
         </div>
       </div>
-      <div id="info" class="hs"><span id="dist">24 M</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
+      <div id="info" class="hs"><span id="mscore" hidden></span><span id="dist">24 M</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
       <div id="keeper" class="hs" aria-live="polite"><span id="klvl">PORTERO 1/20</span><span id="kname">LORIS KARIUS</span><span id="kbar"><i id="kfill"></i></span></div>
     </div>
     <div id="msg"><div id="msgMain"></div><div id="msgSub"></div></div>
@@ -265,7 +292,10 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
         <div><b>2</b><span>Suelta y toca el balón donde quieras golpearlo</span></div>
         <div><b>3</b><span>De lado da rosca. Abajo lo elevas, arriba sale raso y cae</span></div>
       </div>
-      <div class="tap">TOCA PARA JUGAR</div>
+      <div class="tbtns">
+        <button class="btn" id="tInf" type="button">INFINITO</button>
+        <button class="btn alt" id="tCup" type="button">TORNEO<span class="nw">NUEVO</span></button>
+      </div>
       <div class="small" id="tbest">RÉCORD 0</div>
       <div class="trow">
         <button class="chip" id="tPlayer" type="button" hidden>INVITADO</button>
@@ -287,6 +317,35 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
         <button class="chip gold" id="oBoard" type="button" hidden>RANKING</button>
       </div>
       <button class="chip mint" id="oClip" type="button" hidden>COMPARTIR MI MEJOR GOL</button>
+      <button class="link" id="oMenu" type="button">MENÚ</button>
+    </div>
+    <div id="cup" class="screen form" hidden role="dialog" aria-labelledby="cupTitle">
+      <div class="ttl" id="cupTitle">TORNEO</div>
+      <div class="cnext" id="cNext">
+        <span class="k" id="cPhase">GRUPO · PARTIDO 1</span>
+        <span class="n" id="cRival">RIVAL</span>
+        <span class="g" id="cKeeper">PORTERO</span>
+        <span class="o" id="cGoal">MARCA 2 PARA GANAR</span>
+      </div>
+      <div class="small" id="cupPts"></div>
+      <ol class="cup" id="cupList"></ol>
+      <button class="btn" id="cupGo" type="button">JUGAR</button>
+      <button class="link" id="cupQuit" type="button">ABANDONAR TORNEO</button>
+    </div>
+    <div id="runOver" class="screen" hidden>
+      <div class="ttl" id="roTitle">ELIMINADO</div>
+      <div class="small" id="roSub"></div>
+      <div id="roRec" hidden>¡NUEVO RÉCORD!</div>
+      <div class="big" id="roScore">0</div>
+      <div class="stats">
+        <span class="k">GOLES</span><span class="k">RACHA</span><span class="k">RÉCORD</span>
+        <span class="v" id="roGoals">0</span><span class="v" id="roStreak">0</span><span class="v" id="roBest">0</span>
+      </div>
+      <div class="brow">
+        <button class="btn" id="roAgain" type="button">OTRO TORNEO</button>
+      </div>
+      <button class="chip mint" id="roClip" type="button" hidden>COMPARTIR MI MEJOR GOL</button>
+      <button class="link" id="roMenu" type="button">MENÚ</button>
     </div>
     <div id="nameScr" class="screen form" hidden>
       <div class="logo sm"><span class="a">GOLAZO</span><span class="z">INFINITO</span></div>
@@ -369,6 +428,7 @@ let target = null;
 let spot = { x: 0, z: 24 };
 let state = 'title';
 let score = 0, lives = 3, streak = 0, goals = 0, bestStreak = 0, best = 0, shots = 0;
+let RUN = null;                    // cup mode in progress; null = endless mode
 let flight = null;
 let resultT = 0, realT = 0, simT = 0;
 let timeScale = 1, slowT = 0, stopT = 0, shake = 0, flash = 0, celebrate = 0, kickFlash = 0;
@@ -1073,7 +1133,8 @@ function pickKind(n) {
   return 'falta';
 }
 function newKick(first) {
-  const n = goals;
+  // in the cup the difficulty depends on the match and the shot, not on goals scored
+  const n = RUN ? 3 + RUN.idx * 4 + RUN.match.shotIdx : goals;
   const kind = pickKind(n), sd = Math.random() < 0.5 ? -1 : 1;
   kick = { kind, P: null, dir: null, started: false };
   let dist = 17 + Math.min(n, 30) * 0.42 + rnd(0, 4), wantWall = true;
@@ -1121,12 +1182,12 @@ function newKick(first) {
   for (const m of wall) dress(m);
   // keeper: skill grows with goals, personality changes the way he plays
   const prevType = K.type;
-  const T = keeperFor(n);
+  const T = RUN ? RUN.match.keeper : keeperFor(n);
   // a sweeper can't play far off his line on wide kicks
   let kt = T.arch; if (kt === 'libero' && (kind === 'corner' || kind === 'escorada')) kt = 'gato';
   const ST = KSTYLES[kt]; K.type = T; K.s = ST.s * T.sz; K.reach = ST.reach; K.z = ST.z;
   // skill climbs keeper by keeper: 0 for the first, 1 for Yashin, beyond 1 for Benji
-  const s = T.i < KEEPERS.length - 1 ? T.i / (KEEPERS.length - 2) : 1.15;
+  const s = RUN ? RUN.match.r.skill : T.i < KEEPERS.length - 1 ? T.i / (KEEPERS.length - 2) : 1.15;
   K.p = { tau: 0.42 - 0.2 * s + ST.react, vmax: (3.3 + 1.35 * s) * ST.speed, vy: (3.1 + 0.9 * s) * ST.jump * Math.sqrt(ST.s), err: (1.05 - 0.62 * s) * ST.err, catchV: (10 + 5 * s) * ST.catch };
   K.gambleAt = Math.random() < ST.gamble ? K.p.tau * 0.55 : -1;
   K.gside = kt === 'adivino' ? (Math.random() < 0.85 ? adivinoSide : -adivinoSide) : (Math.random() < 0.5 ? -1 : 1);
@@ -1143,8 +1204,9 @@ function newKick(first) {
   setCamFor(spot);
   // announce special kicks and new goalkeepers
   const kLabel = 'PORTERO ' + (T.i + 1) + ' DE ' + KEEPERS.length;
-  if (kind !== 'falta') showMsg(KINDS[kind].name, [KINDS[kind].sub, T !== prevType || first ? T.name : ''].filter(Boolean), 'info');
-  else if (T !== prevType && !first) showMsg(T.name, [kLabel, T.desc || KSTYLES[T.arch].desc], 'info');
+  if (RUN && first) showMsg(RUN.match.r.name, ['PORTERO ' + T.name, 'MARCA ' + RUN.match.need + ' PARA GANAR'], 'info');
+  else if (kind !== 'falta') showMsg(KINDS[kind].name, [KINDS[kind].sub, !RUN && (T !== prevType || first) ? T.name : ''].filter(Boolean), 'info');
+  else if (!RUN && T !== prevType && !first) showMsg(T.name, [kLabel, T.desc || KSTYLES[T.arch].desc], 'info');
   setKeeperCard(T, T !== prevType);
   transT = first ? 1 : 0;
   if (first) Object.assign(cam, camBase);
@@ -1157,11 +1219,17 @@ function newKick(first) {
   sling = null;
 }
 function setKeeperCard(T, changed) {
-  const card = $('keeper'), boss = T.i === KEEPERS.length - 1;
-  $('klvl').textContent = boss ? 'JEFE FINAL' : 'PORTERO ' + (T.i + 1) + '/' + KEEPERS.length;
-  $('kname').textContent = T.name;
+  const card = $('keeper'), r = RUN && RUN.match ? RUN.match.r : null, boss = r ? !!r.boss : T.i === KEEPERS.length - 1;
+  if (r) {
+    $('klvl').textContent = r.phase + ' · ' + T.name;
+    $('kname').textContent = r.name;
+    $('kfill').style.width = Math.round((RUN.idx + 1) / CUP.length * 100) + '%';
+  } else {
+    $('klvl').textContent = boss ? 'JEFE FINAL' : 'PORTERO ' + (T.i + 1) + '/' + KEEPERS.length;
+    $('kname').textContent = T.name;
+    $('kfill').style.width = Math.round((T.i + 1) / KEEPERS.length * 100) + '%';
+  }
   card.style.borderLeftColor = 'rgb(' + T.jersey.join(',') + ')';
-  $('kfill').style.width = Math.round((T.i + 1) / KEEPERS.length * 100) + '%';
   card.classList.toggle('boss', boss);
   if (changed) { card.classList.remove('new'); void card.offsetWidth; card.classList.add('new'); }
 }
@@ -1173,11 +1241,12 @@ function onAimStart() {
 }
 function startGame() {
   audioInit(); sWhistle(); keepAwake(true);
+  RUN = null;
   adivinoSide = Math.random() < 0.5 ? -1 : 1;
   K.type = null;
   clipReset();
   score = 0; lives = 3; streak = 0; goals = 0; bestStreak = 0; shots = 0;
-  $('title').hidden = true; $('over').hidden = true;
+  showScreen('');
   newKick(true);
 }
 function finishGoal() {
@@ -1197,16 +1266,20 @@ function finishGoal() {
   if (f.kind === 'corner') bon.push(['GOL OLÍMPICO', 500]);
   if (f.kind === 'rodando') bon.push(['PRIMER TOQUE', 150]);
   if (f.kind === 'escorada' && Math.abs(kickPos.x) > 20) bon.push(['ÁNGULO IMPOSIBLE', 200]);
+  if (RUN) lives--;                // in the cup every shot counts, goal or not
   if (f.target) {
-    if (lives < 3) { lives++; bon.push(['+1 BALÓN', 300]); gainBall = true; }
+    if (RUN) { lives++; bon.push(['+1 TIRO', 300]); gainBall = true; }
+    else if (lives < 3) { lives++; bon.push(['+1 BALÓN', 300]); gainBall = true; }
     else bon.push(['DIANA', 400]);
   }
   goals++; streak++; bestStreak = Math.max(bestStreak, streak);
+  if (RUN) { RUN.match.mine++; RUN.match.last = true; }
   const mult = Math.min(streak, 10);
   const total = (base + bon.reduce((a, b) => a + b[1], 0)) * mult;
   score += total;
   const main = bon.length >= 3 ? '¡LOCURA!' : bon.length ? '¡GOLAZO!' : '¡GOL!';
   const subs = bon.map(b => b[0]);
+  if (RUN) subs.push(matchLine());
   subs.push('+' + total.toLocaleString('es-ES') + (mult > 1 ? '  (x' + mult + ')' : ''));
   showMsg(main, subs, 'goal');
   lastShot = { goal: true, main, bonus: bon.map(b => b[0]), total, mult, dist: Math.round(f.dist) };
@@ -1226,8 +1299,10 @@ let gainBall = false;
 function finishFail(label) {
   const f = flight; if (f.outcome) return; f.outcome = 'miss';
   lives--; streak = 0;
+  if (RUN) RUN.match.last = false;
   lastShot = { goal: false, main: label, bonus: [], total: 0, mult: 1, dist: Math.round(f.dist || 0) };
-  showMsg(label, lives > 0 ? [lives === 1 ? 'ÚLTIMO BALÓN' : lives + ' BALONES'] : ['SIN BALONES'], 'fail');
+  if (RUN) showMsg(label, [matchLine(), lives > 0 ? (lives === 1 ? 'ÚLTIMO TIRO' : lives + ' TIROS') : 'SIN TIROS'], 'fail');
+  else showMsg(label, lives > 0 ? [lives === 1 ? 'ÚLTIMO BALÓN' : lives + ' BALONES'] : ['SIN BALONES'], 'fail');
   sOoh(); buzz(60);
   state = 'result'; resultT = 0;
   updateHUD();
@@ -1270,6 +1345,122 @@ function gameOver() {
   submitLast();
   keepAwake(false);
 }
+// after each shot: next kick, end of match or game over
+function afterShot() {
+  if (!RUN) { if (lives <= 0) gameOver(); else newKick(false); return; }
+  const m = RUN.match;
+  if (m.sudden) return endMatch(m.last ? 'win' : 'loss');
+  if (m.mine >= m.need) return endMatch('win');
+  if (m.mine + lives < m.r.target) return endMatch('loss');            // can't even draw
+  if (m.mine + lives < m.need && m.mine === m.r.target) return endMatch('draw'); // can't win any more
+  if (lives <= 0) return endMatch(m.mine === m.r.target ? 'draw' : 'loss');
+  m.shotIdx++;
+  newKick(false);
+}
+function continueAfterReplay() { afterShot(); }
+
+/* ---------------- cup mode ---------------- */
+// phase 1: a fixed cup. Each rival has its own keeper; keeper skill rises with the round.
+const CUP = [
+  { name: 'INGLATERRA', keeper: 'DAVID JAMES', phase: 'GRUPO · PARTIDO 1', short: 'GRUPO 1', target: 1, skill: 0.12 },
+  { name: 'MÉXICO', keeper: 'JORGE CAMPOS', phase: 'GRUPO · PARTIDO 2', short: 'GRUPO 2', target: 1, skill: 0.28 },
+  { name: 'COLOMBIA', keeper: 'RENÉ HIGUITA', phase: 'GRUPO · PARTIDO 3', short: 'GRUPO 3', target: 2, skill: 0.42 },
+  { name: 'BÉLGICA', keeper: 'THIBAUT COURTOIS', phase: 'CUARTOS DE FINAL', short: 'CUARTOS', target: 2, skill: 0.6, ko: true },
+  { name: 'ITALIA', keeper: 'GIANLUIGI BUFFON', phase: 'SEMIFINAL', short: 'SEMIS', target: 2, skill: 0.8, ko: true },
+  { name: 'JAPÓN', keeper: 'BENJI PRICE', phase: 'GRAN FINAL', short: 'FINAL', target: 3, skill: 1.15, ko: true, boss: true }
+];
+const CUP_SHOTS = 5, CUP_WIN = [1000, 1000, 1000, 2000, 3000, 5000], CUP_CHAMP = 10000, CUP_SPARE = 500, GROUP_NEED = 4;
+const CUP_OUT = ['LA FASE DE GRUPOS', 'LA FASE DE GRUPOS', 'LA FASE DE GRUPOS', 'CUARTOS', 'SEMIFINALES', 'LA FINAL'];
+let cupBest = 0;
+try { cupBest = +localStorage.getItem('golazo-cup-best') || 0; } catch (e) { }
+const matchLine = () => RUN.match.r.name + ' ' + RUN.match.r.target + ' · TÚ ' + RUN.match.mine;
+let cupTimer = 0;
+function startRun() {
+  audioInit(); keepAwake(true); clipReset();
+  clearTimeout(cupTimer);
+  RUN = { idx: 0, pts: 0, res: [], match: null };
+  score = 0; streak = 0; goals = 0; bestStreak = 0; shots = 0; lives = CUP_SHOTS;
+  showCup();
+}
+function showCup() {
+  state = 'cup'; RUN.match = null;
+  const i = RUN.idx, r = CUP[i], K0 = KEEPERS.find(k => k.name === r.keeper);
+  $('cPhase').textContent = r.phase;
+  $('cRival').textContent = r.name;
+  $('cKeeper').textContent = 'PORTERO: ' + K0.name;
+  $('cGoal').textContent = 'MARCA ' + (r.target + 1) + ' PARA GANAR';
+  $('cNext').classList.toggle('boss', !!r.boss);
+  $('cupPts').textContent = i < 3 ? 'PUNTOS DE GRUPO ' + RUN.pts + ' · PASAS CON ' + GROUP_NEED : 'ELIMINATORIAS · SI EMPATAS, MUERTE SÚBITA';
+  $('cupGo').textContent = i === 0 ? 'EMPEZAR' : 'JUGAR';
+  const list = $('cupList'); list.innerHTML = '';
+  CUP.forEach((c, j) => {
+    const li = document.createElement('li'), res = RUN.res[j];
+    li.className = (j === i ? 'now' : j > i ? 'lock' : '') + (c.boss ? ' boss' : '') + (res ? ' ' + res.res : '');
+    const add = (cls, t) => { const s = document.createElement('span'); s.className = cls; s.textContent = t; li.appendChild(s); };
+    add('ph', c.short); add('rv', c.name);
+    add('rs', res ? c.target + ' - ' + res.mine + ({ W: ' ✓', D: ' =', L: ' ✗' })[res.res] : 'MARCA ' + (c.target + 1));
+    list.appendChild(li);
+  });
+  showScreen('cup'); updateHUD();
+}
+function startMatch() {
+  const r = CUP[RUN.idx];
+  RUN.match = { r, keeper: KEEPERS.find(k => k.name === r.keeper), need: r.target + 1, mine: 0, shotIdx: 0, sudden: false, last: false };
+  lives = CUP_SHOTS; K.type = null;
+  adivinoSide = Math.random() < 0.5 ? -1 : 1;
+  showScreen(''); sWhistle(); keepAwake(true);
+  newKick(true);
+}
+function endMatch(res) {
+  const m = RUN.match, r = m.r;
+  if (res === 'draw' && r.ko) {
+    m.sudden = true; lives = 1; m.shotIdx++;
+    newKick(false);
+    showMsg('MUERTE SÚBITA', ['EL PRIMER GOL PASA', 'EL PRIMER FALLO ELIMINA'], 'info');
+    return;
+  }
+  const code = res === 'win' ? 'W' : res === 'draw' ? 'D' : 'L';
+  RUN.res[RUN.idx] = { res: code, mine: m.mine };
+  let pts = 0, next = 'cup';
+  if (res === 'win') { pts = CUP_WIN[RUN.idx] + (m.sudden ? 0 : lives * CUP_SPARE); if (!r.ko) RUN.pts += 3; }
+  else if (res === 'draw') RUN.pts += 1;
+  if (res === 'win' && RUN.idx === CUP.length - 1) { pts += CUP_CHAMP; next = 'champ'; }
+  else if (r.ko && res !== 'win') next = 'out';
+  else if (RUN.idx === 2 && RUN.pts < GROUP_NEED) next = 'out';
+  score += pts;
+  const line = r.name + ' ' + r.target + ' · TÚ ' + m.mine;
+  const outGroup = next === 'out' && !r.ko ? ['NO PASAS DE GRUPOS'] : [];
+  if (res === 'win') showMsg(next === 'champ' ? '¡CAMPEÓN!' : '¡VICTORIA!', [line, ...outGroup, '+' + pts.toLocaleString('es-ES')], 'goal');
+  else if (res === 'draw') showMsg('EMPATE', [line, '+1 PUNTO DE GRUPO', ...outGroup], 'info');
+  else showMsg('DERROTA', [line, ...outGroup], 'fail');
+  if (res === 'win') { sRoar(); confetti(); } else sOoh();
+  state = 'cupwait'; updateHUD();
+  const run = RUN;
+  clearTimeout(cupTimer);
+  cupTimer = setTimeout(() => {
+    if (RUN !== run) return;
+    if (next === 'cup') { RUN.idx++; showCup(); } else runOver(next);
+  }, 2300);
+}
+function runOver(kind) {
+  state = 'runover';
+  const rec = score > cupBest && score > 0;
+  if (rec) { cupBest = score; try { localStorage.setItem('golazo-cup-best', String(cupBest)); } catch (e) { } }
+  $('roTitle').textContent = kind === 'champ' ? '¡CAMPEÓN!' : 'ELIMINADO';
+  $('roSub').textContent = kind === 'champ' ? 'HAS GANADO EL TORNEO' : 'CAÍSTE EN ' + CUP_OUT[RUN.idx];
+  $('roRec').hidden = !rec;
+  $('roScore').textContent = score.toLocaleString('es-ES');
+  $('roGoals').textContent = goals; $('roStreak').textContent = bestStreak; $('roBest').textContent = cupBest.toLocaleString('es-ES');
+  $('roClip').hidden = !bestClip;
+  RUN.match = null;
+  showScreen('runOver'); updateHUD();
+  keepAwake(false);
+}
+function toMenu() {
+  clearTimeout(cupTimer);
+  RUN = null; state = 'title'; keepAwake(false);
+  showScreen('title'); updateHUD();
+}
 
 /* ---------------- HUD ---------------- */
 let lastMult = 0;
@@ -1279,11 +1470,16 @@ function updateHUD(goal) {
   if (streak > 0) { m.className = ''; m.textContent = 'RACHA x' + Math.min(streak, 10); if (goal && streak !== lastMult) { void m.offsetWidth; m.className = 'bump'; } }
   else { m.className = 'off'; m.textContent = 'RACHA 0'; }
   lastMult = streak;
-  const bs = $('balls').children;
-  for (let i = 0; i < 3; i++) { bs[i].className = 'b' + (i < lives ? '' : ' lost') + (gainBall && i === lives - 1 ? ' gain' : ''); }
+  const box = $('balls'), rm = RUN && RUN.match, nb = rm ? (rm.sudden ? 1 : Math.max(CUP_SHOTS, lives)) : 3;
+  while (box.children.length < nb) { const b = document.createElement('i'); b.className = 'b'; box.appendChild(b); }
+  while (box.children.length > nb) box.lastChild.remove();
+  const bs = box.children;
+  for (let i = 0; i < nb; i++) { bs[i].className = 'b' + (i < lives ? '' : ' lost') + (gainBall && i === lives - 1 ? ' gain' : ''); }
   gainBall = false;
-  $('best').textContent = 'MEJOR ' + Math.max(best, score).toLocaleString('es-ES');
-  $('tbest').textContent = 'RÉCORD ' + best.toLocaleString('es-ES');
+  const ms = $('mscore'); ms.hidden = !rm;
+  if (rm) ms.textContent = rm.r.name.slice(0, 3) + ' ' + rm.r.target + ' · TÚ ' + rm.mine;
+  $('best').textContent = 'MEJOR ' + Math.max(RUN ? cupBest : best, score).toLocaleString('es-ES');
+  $('tbest').textContent = 'RÉCORD ' + best.toLocaleString('es-ES') + (cupBest > 0 ? ' · TORNEO ' + cupBest.toLocaleString('es-ES') : '');
   $('dist').textContent = Math.round(Math.hypot(spot.x, spot.z)) + ' M';
   const wm = Math.hypot(wind.x, wind.z);
   $('wind').hidden = wm < 0.1;
@@ -1898,7 +2094,6 @@ function endReplay(skipped) {
   if (want) { state = 'share'; openSharePanel(null, 'play'); return; }
   continueAfterReplay();
 }
-function continueAfterReplay() { if (lives <= 0) gameOver(); else newKick(false); }
 function updReplay(dt) {
   rp.t += dt;
   const f = clamp(rp.t * 60 * rp.speed, 0, rec.length - 1), i0 = Math.floor(f), i1 = Math.min(rec.length - 1, i0 + 1), a = f - i0;
@@ -1978,7 +2173,7 @@ function update(dtReal) {
   net.vel += (-90 * net.amp - 7 * net.vel) * sdt; net.amp += net.vel * sdt;
   // camera
   const e = k => 1 - Math.exp(-k * dtReal);
-  if (state === 'title' || state === 'over') {
+  if (state === 'title' || state === 'over' || state === 'cup' || state === 'cupwait' || state === 'runover') {
     const sw = Math.sin(realT * 0.25) * 0.18;
     cam.x = lerp(cam.x, camBase.x + Math.sin(realT * 0.2) * 1.5, e(1)); cam.z = lerp(cam.z, camBase.z, e(1)); cam.y = lerp(cam.y, camBase.y, e(1)); cam.yaw = lerp(cam.yaw, camBase.yaw + sw, e(1));
   } else if (state === 'trans') {
@@ -2008,7 +2203,7 @@ function update(dtReal) {
     if (resultT > (goal ? 1.9 : save ? 1.4 : 1.6) || (skipReq && resultT > 0.6)) {
       const skipped = skipReq; skipReq = false; recOn = false;
       if ((goal || save) && !skipped && rec.length > 20) startReplay();
-      else if (lives <= 0) gameOver(); else newKick(false);
+      else afterShot();
     }
   }
   skipReq = skipReq && state === 'result';
@@ -2073,8 +2268,14 @@ $('cback').addEventListener('click', e => { e.stopPropagation(); closeContact();
 $('contact').addEventListener('pointerdown', e => e.stopPropagation());
 document.querySelectorAll('.modes button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMode(b.dataset.mode); }));
 $('modeBtn').addEventListener('click', e => { e.stopPropagation(); setMode(mode === 'swipe' ? 'sling' : 'swipe'); });
-$('title').addEventListener('click', e => { if (e.target.closest('button')) return; startGame(); });
+$('tInf').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+$('tCup').addEventListener('click', e => { e.stopPropagation(); startRun(); });
 $('again').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+$('oMenu').addEventListener('click', e => { e.stopPropagation(); toMenu(); });
+$('cupGo').addEventListener('click', e => { e.stopPropagation(); if (RUN && state === 'cup') startMatch(); });
+$('cupQuit').addEventListener('click', e => { e.stopPropagation(); toMenu(); });
+$('roAgain').addEventListener('click', e => { e.stopPropagation(); startRun(); });
+$('roMenu').addEventListener('click', e => { e.stopPropagation(); toMenu(); });
 const muteBtn = $('mute');
 function syncMute() { muteBtn.textContent = au.muted ? 'MUDO' : 'SON'; muteBtn.setAttribute('aria-pressed', au.muted ? 'true' : 'false'); if (au.m) au.m.gain.value = au.muted ? 0 : 0.8; }
 muteBtn.addEventListener('click', e => { e.stopPropagation(); audioInit(); au.muted = !au.muted; try { localStorage.setItem('golazo-mute', au.muted ? '1' : '0'); } catch (_) { } syncMute(); });
@@ -2118,7 +2319,7 @@ let nameReturn = 'title';
 const fmt = n => Number(n || 0).toLocaleString('es-ES');
 const isPlayer = () => !!(player && player.id && player.token);
 
-function showScreen(id) { for (const s of ['nameScr', 'title', 'over', 'board']) $(s).hidden = s !== id; }
+function showScreen(id) { for (const s of ['nameScr', 'title', 'over', 'board', 'cup', 'runOver']) $(s).hidden = s !== id; }
 function syncPlayerUI() {
   const chip = $('tPlayer');
   chip.hidden = $('tBoard').hidden = !NET.enabled;
@@ -2341,7 +2542,7 @@ function clipStart(meta) {
       const blob = new Blob(CLIP.chunks, { type: CLIP_MIME.split(';')[0] }); CLIP.chunks = [];
       const clip = { blob, url: URL.createObjectURL(blob), mime: CLIP_MIME.split(';')[0], meta: CLIP.meta };
       let kept = false;
-      if (clip.meta.goal && (!bestClip || clip.meta.total > bestClip.meta.total)) { if (bestClip && bestClip !== shareClip) URL.revokeObjectURL(bestClip.url); bestClip = clip; kept = true;  if (state === 'over') $('oClip').hidden = false; }
+      if (clip.meta.goal && (!bestClip || clip.meta.total > bestClip.meta.total)) { if (bestClip && bestClip !== shareClip) URL.revokeObjectURL(bestClip.url); bestClip = clip; kept = true;  if (state === 'over') $('oClip').hidden = false; if (state === 'runover') $('roClip').hidden = false; }
       if (CLIP.onReady) { const f = CLIP.onReady; CLIP.onReady = null; f(clip); kept = true; }
       if (!kept) URL.revokeObjectURL(clip.url);
     };
@@ -2447,6 +2648,7 @@ function saveClip() {
 $('clipSave').addEventListener('click', e => { e.stopPropagation(); saveClip(); });
 $('clipClose').addEventListener('click', e => { e.stopPropagation(); closeSharePanel(); });
 $('oClip').addEventListener('click', e => { e.stopPropagation(); if (bestClip) openSharePanel(bestClip, 'over'); });
+$('roClip').addEventListener('click', e => { e.stopPropagation(); if (bestClip) openSharePanel(bestClip, 'over'); });
 
 boot({});
 syncPlayerUI();
@@ -2455,7 +2657,10 @@ if (NET.enabled && !player) openName('title');
 else { flushPending(); if (params.has('ranking') && NET.enabled) openBoard('title'); }
 if (params.has('ranking') || params.has('source')) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
-if (DEBUG) Object.defineProperties(window.__golazo, Object.getOwnPropertyDescriptors({ setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; }, over: () => { lives = 0; gameOver(); } }));
+if (DEBUG) Object.defineProperties(window.__golazo, Object.getOwnPropertyDescriptors({ setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; }, over: () => { lives = 0; gameOver(); },
+  run: () => RUN, startRun, startMatch,
+  // fake the outcome of the current shot (testing the cup flow without aiming)
+  fake: goal => { if (state !== 'aim' && state !== 'trans') return false; rec.length = 0; flight = { dist: 20, crossX: 0, crossY: 1, wy0: 0, v0: 25, kind: kick.kind }; if (goal) finishGoal(); else finishFail('FUERA'); return true; } }));
 })();
 </script>
 </body>

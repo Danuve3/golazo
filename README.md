@@ -11,6 +11,10 @@ Todo el juego es un único `index.html` sin dependencias ni paso de compilación
 
 Tienes 3 balones. Cada gol seguido sube el multiplicador hasta x10.
 
+## Modo torneo
+
+Seis partidos contra selecciones, cada una con su portero: tres de grupo (pasas con 4 puntos) y cuartos, semis y una final contra Benji Price. En cada partido tienes 5 tiros para superar el marcador del rival; en eliminatorias, el empate se decide a muerte súbita. Puntúan los goles como en el modo infinito, más un premio por cada partido ganado, 500 por cada tiro que te sobre y 10.000 por ser campeón. El récord del torneo se guarda aparte en el dispositivo.
+
 ## App instalable
 
 Golazo es una PWA: se instala en el móvil y se abre a pantalla completa, sin barra del navegador, con su icono y pantalla de arranque.
