@@ -182,6 +182,32 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 .cup li.W .rs{color:var(--mint)}
 .cup li.D .rs{color:var(--gold)}
 .cup li.L .rs{color:var(--coral)}
+#coins{display:inline-flex;align-items:center;gap:4px;background:rgba(12,10,32,.55);padding:2px 6px}
+#coins i,.coin{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 1px var(--ink),1px 1px 0 1px var(--ink)}
+.ups{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:360px}
+.ups span{font-family:var(--f-num);font-size:10px;letter-spacing:.04em;padding:3px 6px;background:var(--plum);box-shadow:2px 2px 0 var(--ink)}
+.ups span.r1{background:#1f5c4f}
+.ups span.r2{background:#7a5a12}
+.cupev{font-family:var(--f-num);font-size:11px;letter-spacing:.04em;background:rgba(255,102,80,.22);padding:4px 8px;max-width:340px}
+#pick{gap:14px}
+#pick .ttl{font-size:clamp(26px,8vw,38px)}
+.cards{display:grid;gap:10px;width:min(100%,360px)}
+.card{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;font:inherit;color:var(--cream);background:rgba(12,10,32,.9);border:0;padding:10px 12px 11px;box-shadow:inset 4px 0 0 var(--plum),3px 3px 0 var(--ink);cursor:pointer}
+.card:active{transform:translate(2px,2px)}
+.card:disabled{opacity:.42;cursor:default;transform:none}
+.card:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.card .t{font-family:var(--f-num);font-size:10px;letter-spacing:.1em;opacity:.75}
+.card .n{font-family:var(--f-disp);font-weight:700;font-size:21px;line-height:1.05}
+.card .d{font-family:var(--f-num);font-size:11px;letter-spacing:.03em;line-height:1.35;opacity:.9}
+.card .p{font-family:var(--f-num);font-size:12px;margin-top:3px;display:inline-flex;align-items:center;gap:5px;color:var(--gold)}
+.card.k-train{box-shadow:inset 4px 0 0 var(--mint),3px 3px 0 var(--ink)}
+.card.k-shop{box-shadow:inset 4px 0 0 var(--gold),3px 3px 0 var(--ink)}
+.card.k-event{box-shadow:inset 4px 0 0 var(--coral),3px 3px 0 var(--ink)}
+.card.r1{box-shadow:inset 4px 0 0 var(--mint),3px 3px 0 var(--ink)}
+.card.r1 .n{color:var(--mint)}
+.card.r2{box-shadow:inset 4px 0 0 var(--gold),3px 3px 0 var(--ink),0 0 0 2px rgba(255,200,74,.35)}
+.card.r2 .n{color:var(--gold)}
+.card.own{background:rgba(124,240,200,.16)}
 .screen.form{cursor:default;touch-action:auto;overflow-y:auto;background:linear-gradient(to bottom,rgba(5,4,15,.93),rgba(5,4,15,.88) 60%,rgba(5,4,15,.95));justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
 .logo.sm .a{font-size:clamp(44px,14vw,66px)}
 .logo.sm .z{font-size:clamp(15px,4.8vw,22px);margin-top:10px}
@@ -252,7 +278,7 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
           <div id="best" class="hs">MEJOR 0</div>
         </div>
       </div>
-      <div id="info" class="hs"><span id="mscore" hidden></span><span id="dist">24 M</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
+      <div id="info" class="hs"><span id="mscore" hidden></span><span id="coins" hidden><i></i><b id="coinN">0</b></span><span id="dist">24 M</span><span id="wind" hidden><span id="warr"><i></i></span><span id="wtxt">0.0 m/s</span></span></div>
       <div id="keeper" class="hs" aria-live="polite"><span id="klvl">PORTERO 1/20</span><span id="kname">LORIS KARIUS</span><span id="kbar"><i id="kfill"></i></span></div>
     </div>
     <div id="msg"><div id="msgMain"></div><div id="msgSub"></div></div>
@@ -329,9 +355,17 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
         <span class="o" id="cGoal">MARCA 2 PARA GANAR</span>
       </div>
       <div class="small" id="cupPts"></div>
+      <div class="ups" id="cupUps" hidden></div>
+      <div class="cupev" id="cupEv" hidden></div>
       <ol class="cup" id="cupList"></ol>
       <button class="btn" id="cupGo" type="button">JUGAR</button>
       <button class="link" id="cupQuit" type="button">ABANDONAR TORNEO</button>
+    </div>
+    <div id="pick" class="screen form" hidden role="dialog" aria-labelledby="pickTitle">
+      <div class="ttl" id="pickTitle">ELIGE UNA CARTA</div>
+      <div class="small" id="pickSub"></div>
+      <div class="cards" id="pickCards"></div>
+      <div class="brow" id="pickRow"></div>
     </div>
     <div id="runOver" class="screen" hidden>
       <div class="ttl" id="roTitle">ELIMINADO</div>
@@ -430,6 +464,9 @@ let spot = { x: 0, z: 24 };
 let state = 'title';
 let score = 0, lives = 3, streak = 0, goals = 0, bestStreak = 0, best = 0, shots = 0;
 let RUN = null;                    // cup mode in progress; null = endless mode
+// what the cup upgrades change. Endless mode always plays with NOFX.
+const NOFX = Object.freeze({ magnus: 1, knuckle: 1, power: 1, fire: false, steer: false, shots: 0, target: false, penRival: 0, escuadra: 1, coins: 0, hot: false, artist: false, tau: 0, catchV: 1, wallLess: 0, calm: false });
+let FX = NOFX;
 let flight = null;
 let resultT = 0, realT = 0, simT = 0;
 let timeScale = 1, slowT = 0, stopT = 0, shake = 0, flash = 0, celebrate = 0, kickFlash = 0;
@@ -565,7 +602,7 @@ function accel(b, out, useKn) {
   let ax = -kd * rvx, ay = -kd * rvy - G, az = -kd * rvz;
   // Magnus, lift coefficient saturates around 0.35
   const w = Math.sqrt(b.wx * b.wx + b.wy * b.wy + b.wz * b.wz);
-  let km = KM; const S = R * w / sp; if (S > 0.35) km *= 0.35 / S;
+  let km = KM * FX.magnus; const S = R * w / sp; if (S > 0.35) km *= 0.35 / S;
   ax += km * (b.wy * rvz - b.wz * rvy);
   ay += km * (b.wz * rvx - b.wx * rvz);
   az += km * (b.wx * rvy - b.wy * rvx);
@@ -725,6 +762,7 @@ function ballVsKeeper() {
   }
 }
 function ballVsWall() {
+  if (FX.fire && flight.v0 >= 30) return;        // fireball: goes straight through the wall
   for (const m of wall) {
     if (m.type === 'lie') {
       if (Math.abs(ball.z - m.z) > 1.3 || Math.abs(ball.x - m.x) > 1.3 || ball.y > 0.6) continue;
@@ -786,6 +824,11 @@ function stepBall(dt) {
   b.t += dt;
   accel(b, AC1, true);
   b.vx += AC1.x * dt; b.vy += AC1.y * dt; b.vz += AC1.z * dt;
+  // guided ball: in the last metres it drifts towards the nearest top corner
+  if (FX.steer && f && !f.crossed && !f.keeper && !f.wall && b.vz < 0 && b.z > 0 && b.z < 3 && Math.abs(b.x) < GOAL_HW + 1.5) {
+    b.vx += clamp((Math.sign(b.x || 1) * (GOAL_HW - 0.35)) - b.x, -1, 1) * 7 * dt;
+    b.vy += clamp((GOAL_H - 0.35) - b.y, -1, 1) * 4 * dt;
+  }
   const pz = b.z;
   b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
   const sd = Math.exp(-0.1 * dt); b.wx *= sd; b.wy *= sd; b.wz *= sd;
@@ -1020,11 +1063,12 @@ function shoot(sw) {
   return launch(tgt, v0, wy, 7 * clamp(1 - Math.abs(wy) / 60, 0.2, 1), Math.abs(wy) < 9);
 }
 function launch(tgt, v0, wy, back, knOK) {
+  v0 *= FX.power;
   const tz = tgt.z || 0;
   let hx = tgt.x - ball.x, hz_ = tz - ball.z, D = Math.hypot(hx, hz_); hx /= D; hz_ /= D;
   // aim off so the curve brings it back to the line the finger drew
   const rightX = -hz_, rightZ = hx;
-  const tFl = D / (v0 * 0.88), aCurve = KM * Math.abs(wy) * v0 * 0.8;
+  const tFl = D / (v0 * 0.88), aCurve = KM * FX.magnus * Math.abs(wy) * v0 * 0.8;
   const off = 0.5 * aCurve * tFl * tFl * 0.85 * Math.sign(wy);
   let ax = tgt.x + rightX * off, az = tz + rightZ * off;
   hx = ax - ball.x; hz_ = az - ball.z; D = Math.hypot(hx, hz_); hx /= D; hz_ /= D;
@@ -1034,7 +1078,7 @@ function launch(tgt, v0, wy, back, knOK) {
   const b = ball;
   b.vx = v0 * ch * hx; b.vy = v0 * Math.sin(loft); b.vz = v0 * ch * hz_;
   b.wx = back * (-hz_); b.wz = back * hx; b.wy = wy;
-  b.kn = (knOK && v0 > 26.5) ? { a: clamp((v0 - 26) * 0.5, 0.6, 3.4), f1: rnd(5, 9), f2: rnd(4, 8), p1: rnd(0, 6.3), p2: rnd(0, 6.3) } : null;
+  b.kn = (knOK && v0 > (FX.knuckle > 1 ? 20.5 : 26.5)) ? { a: clamp((v0 - (FX.knuckle > 1 ? 20 : 26)) * 0.5, 0.6, 3.4) * FX.knuckle, f1: rnd(5, 9), f2: rnd(4, 8), p1: rnd(0, 6.3), p2: rnd(0, 6.3) } : null;
   b.t = 0; b.live = true; b.held = false;
   kickPos.x = b.x; kickPos.z = b.z;
   rec = []; recOn = true; recCnt = 0;
@@ -1185,6 +1229,11 @@ function newKick(first) {
       const cxw = wx + px * (0.32 - (cnt - 1) * 0.25), czw = wz + pz * (0.32 - (cnt - 1) * 0.25);
       wall.push({ type: 'lie', x: cxw + dx * 0.75, z: czw + dz * 0.75, y: 0, vy: 0, px, pz, jumpAt: 99, jv: 0, jumped: true, skin: SKINS[(gr() * 4) | 0], hair: C.hair });
     }
+    // short wall upgrade: one man fewer per stack, never below one
+    for (let k = 0; k < FX.wallLess; k++) {
+      const std = wall.filter(w => w.type === 'std');
+      if (std.length > 1) wall.splice(wall.indexOf(std[std.length - 1]), 1);
+    }
   }
   if (kind === 'rodando' && n >= 5) {
     const d = kick.dir, gx = -spot.x, gz = -spot.z, gl = Math.hypot(gx, gz);
@@ -1200,19 +1249,20 @@ function newKick(first) {
   const ST = KSTYLES[kt]; K.type = T; K.s = ST.s * T.sz; K.reach = ST.reach; K.z = ST.z;
   // skill climbs keeper by keeper: 0 for the first, 1 for Yashin, beyond 1 for Benji
   const s = RUN ? RUN.match.r.skill : T.i < KEEPERS.length - 1 ? T.i / (KEEPERS.length - 2) : 1.15;
-  K.p = { tau: 0.42 - 0.2 * s + ST.react, vmax: (3.3 + 1.35 * s) * ST.speed, vy: (3.1 + 0.9 * s) * ST.jump * Math.sqrt(ST.s), err: (1.05 - 0.62 * s) * ST.err * (mods.sharp ? 0.8 : 1), catchV: (10 + 5 * s) * ST.catch };
+  K.p = { tau: 0.42 - 0.2 * s + ST.react, vmax: (3.3 + 1.35 * s) * ST.speed, vy: (3.1 + 0.9 * s) * ST.jump * Math.sqrt(ST.s), err: (1.05 - 0.62 * s) * ST.err * (mods.sharp ? 0.8 : 1), catchV: (10 + 5 * s) * ST.catch * FX.catchV };
+  K.p.tau += FX.tau;
   K.gambleAt = gr() < ST.gamble ? K.p.tau * 0.55 : -1;
   K.gside = kt === 'adivino' ? (gr() < 0.85 ? adivinoSide : -adivinoSide) : (gr() < 0.5 ? -1 : 1);
   // the final boss guesses: he tends to dive to the side of your previous shot
   if (mods.boss && lastSide && gr() < 0.6) { K.gambleAt = K.p.tau * 0.55; K.gside = lastSide; }
   // wind
-  if (kind === 'penalti') { wind.x = 0; wind.z = 0; }
-  else if (mods.storm) { const m = grnd(3, 6), a = grnd(0, Math.PI * 2); wind.x = Math.cos(a) * m; wind.z = Math.sin(a) * m; }
+  if (kind === 'penalti' || FX.calm) { wind.x = 0; wind.z = 0; }
+  else if (mods.storm || (M && M.storm)) { const m = grnd(3, 6), a = grnd(0, Math.PI * 2); wind.x = Math.cos(a) * m; wind.z = Math.sin(a) * m; }
   else if (n >= 4) { const m = Math.min(6, 1 + (n - 4) * 0.33) * grnd(0.45, 1), a = grnd(0, Math.PI * 2); wind.x = Math.cos(a) * m; wind.z = Math.sin(a) * m; }
   else { wind.x = 0; wind.z = 0; }
   // golden target
   target = null;
-  if (kind !== 'penalti' && n >= 2 && gr() < 0.32) target = { x: (gr() < 0.5 ? -1 : 1) * (GOAL_HW - 0.6), y: gr() < 0.6 ? GOAL_H - 0.55 : 0.55, r: 0.45 };
+  if (kind !== 'penalti' && (FX.target || (n >= 2 && gr() < 0.32))) target = { x: (gr() < 0.5 ? -1 : 1) * (GOAL_HW - 0.6), y: gr() < 0.6 ? GOAL_H - 0.55 : 0.55, r: 0.45 };
   placeBall();
   if (kind === 'rodando') { ball.x = kick.start.x; ball.z = kick.start.z; }
   keeperReset();
@@ -1259,7 +1309,7 @@ function onAimStart() {
 }
 function startGame() {
   audioInit(); sWhistle(); keepAwake(true);
-  RUN = null;
+  RUN = null; FX = NOFX;
   adivinoSide = Math.random() < 0.5 ? -1 : 1;
   K.type = null;
   clipReset();
@@ -1271,7 +1321,7 @@ function finishGoal() {
   const f = flight; f.outcome = 'goal';
   const bon = [];
   const base = 100 + Math.round(Math.max(0, f.dist - 16) * 10);
-  if (Math.abs(f.crossX) > GOAL_HW - 0.75 && f.crossY > GOAL_H - 0.65) bon.push(['ESCUADRA', 200]);
+  if (Math.abs(f.crossX) > GOAL_HW - 0.75 && f.crossY > GOAL_H - 0.65) bon.push(['ESCUADRA', 200 * FX.escuadra]);
   if (f.post) bon.push([f.bar ? 'LARGUERO Y DENTRO' : 'PALO Y DENTRO', 150]);
   if (f.keeper) bon.push(['SE LE ESCAPA', 100]);
   if (f.scorpTry && !f.scorp) bon.push(['ESCORPIÓN FALLIDO', 150]);
@@ -1292,7 +1342,8 @@ function finishGoal() {
   }
   goals++; streak++; bestStreak = Math.max(bestStreak, streak);
   if (RUN) { if (!RUN.match.pens) RUN.match.mine++; RUN.match.last = true; lastSide = Math.sign(ball.x) || lastSide; }
-  const mult = Math.min(streak, 10);
+  const mult = Math.min(streak, 10) + (FX.artist ? bon.length : 0);
+  if (RUN) RUN.coins += Math.round((10 + 5 * bon.length) * (1 + FX.coins));
   const total = (base + bon.reduce((a, b) => a + b[1], 0)) * mult;
   score += total;
   const main = bon.length >= 3 ? '¡LOCURA!' : bon.length ? '¡GOLAZO!' : '¡GOL!';
@@ -1318,7 +1369,7 @@ function finishFail(label) {
   const f = flight; if (f.outcome) return; f.outcome = 'miss';
   if (!(RUN && RUN.match.pens)) lives--;
   streak = 0;
-  if (RUN) { RUN.match.last = false; lastSide = Math.sign(ball.x) || lastSide; }
+  if (RUN) { RUN.match.last = false; RUN.match.misses++; lastSide = Math.sign(ball.x) || lastSide; }
   lastShot = { goal: false, main: label, bonus: [], total: 0, mult: 1, dist: Math.round(f.dist || 0) };
   if (RUN && RUN.match.pens) showMsg(label, [], 'fail');
   else if (RUN) showMsg(label, [matchLine(), lives > 0 ? (lives === 1 ? 'ÚLTIMO TIRO' : lives + ' TIROS') : 'SIN TIROS'], 'fail');
@@ -1424,7 +1475,8 @@ function startRun(seed) {
   audioInit(); keepAwake(true); clipReset();
   clearTimeout(cupTimer);
   seed = seed == null ? (Math.random() * 4294967296) >>> 0 : seed >>> 0;
-  RUN = { seed, bracket: drawBracket(seed), idx: 0, pts: 0, res: [], match: null };
+  RUN = { seed, bracket: drawBracket(seed), idx: 0, pts: 0, res: [], match: null, coins: 0, ups: [], next: freshNext(), rolls: 0 };
+  recalcFx();
   score = 0; streak = 0; goals = 0; bestStreak = 0; shots = 0; lives = CUP_SHOTS;
   showCup();
 }
@@ -1439,6 +1491,10 @@ function showCup() {
   $('cNext').classList.toggle('boss', !!r.boss);
   $('cupPts').textContent = i < 3 ? 'PUNTOS DE GRUPO ' + RUN.pts + ' · PASAS CON ' + GROUP_NEED : 'ELIMINATORIAS · SI EMPATAS, PENALTIS';
   $('cupGo').textContent = i === 0 ? 'EMPEZAR' : 'JUGAR';
+  $('cupPts').textContent += ' · MONEDAS ' + RUN.coins;
+  const ups = $('cupUps'); ups.innerHTML = ''; ups.hidden = !RUN.ups.length;
+  for (const id of [...new Set(RUN.ups)]) { const u = UPG[id], n = owned(id), sp = document.createElement('span'); sp.className = 'r' + u.rar; sp.textContent = u.name + (n > 1 ? ' x' + n : ''); ups.appendChild(sp); }
+  $('cupEv').hidden = !RUN.next.label; $('cupEv').textContent = 'PRÓXIMO PARTIDO: ' + RUN.next.label;
   const list = $('cupList'); list.innerHTML = '';
   B.forEach((c, j) => {
     const li = document.createElement('li'), res = RUN.res[j];
@@ -1452,8 +1508,11 @@ function showCup() {
 }
 function startMatch() {
   const r = RUN.bracket[RUN.idx];
-  RUN.match = { r, keeper: KEEPERS.find(k => k.name === r.keeper), need: r.target + 1, mine: 0, shotIdx: 0, pens: null, last: false };
-  lives = CUP_SHOTS; K.type = null; lastSide = 0;
+  const nx = RUN.next; RUN.next = freshNext();
+  RUN.match = { r, keeper: KEEPERS.find(k => k.name === r.keeper), need: r.target + 1, mine: 0, shotIdx: 0, pens: null, last: false, misses: 0, storm: nx.storm, reward: nx.reward, clean: nx.clean };
+  lives = Math.max(1, CUP_SHOTS + FX.shots + nx.shots); K.type = null; lastSide = 0;
+  RUN.match.shots0 = lives;
+  if (FX.hot && streak < 1) streak = 1;
   adivinoSide = Math.random() < 0.5 ? -1 : 1;
   showScreen(''); sWhistle(); keepAwake(true);
   newKick(true);
@@ -1473,7 +1532,7 @@ function penAfterKick() {
   const m = RUN.match, P = m.pens, run = RUN;
   P.me.push(m.last);
   const d = penDecide(P); if (d) return endMatch(d);
-  const sc = mulberry32(seedFor(RUN.seed, RUN.idx * 1000 + 500 + P.them.length))() < m.r.pen;
+  const sc = mulberry32(seedFor(RUN.seed, RUN.idx * 1000 + 500 + P.them.length))() < m.r.pen + FX.penRival;
   P.them.push(sc);
   if (sc) { showMsg('MARCA ' + m.r.name, [penLine()], 'fail'); sOoh(); }
   else { showMsg('¡FALLA ' + m.r.name + '!', [penLine()], 'goal'); sRoar(); }
@@ -1496,7 +1555,13 @@ function endMatch(res) {
   const pen = m.pens ? penCount(m.pens.them) + '-' + penCount(m.pens.me) : '';
   RUN.res[RUN.idx] = { res: code, mine: m.mine, pen };
   let pts = 0, next = 'cup';
-  if (res === 'win') { pts = CUP_WIN[RUN.idx] + (m.pens ? 0 : lives * CUP_SPARE); if (!r.ko) RUN.pts += 3; }
+  const gifts = [];
+  if (res === 'win') {
+    pts = CUP_WIN[RUN.idx] + (m.pens ? 0 : lives * CUP_SPARE); if (!r.ko) RUN.pts += 3;
+    RUN.coins += 20;
+    if (m.reward) gifts.push(giftUpgrade(1));
+    if (m.clean && m.misses === 0) gifts.push(giftUpgrade(2));
+  }
   else if (res === 'draw') RUN.pts += 1;
   if (res === 'win' && RUN.idx === RUN.bracket.length - 1) { pts += CUP_CHAMP; next = 'champ'; }
   else if (r.ko && res !== 'win') next = 'out';
@@ -1504,7 +1569,7 @@ function endMatch(res) {
   score += pts;
   const line = r.name + ' ' + r.target + ' · TÚ ' + m.mine + (pen ? ' · PEN ' + pen : '');
   const outGroup = next === 'out' && !r.ko ? ['NO PASAS DE GRUPOS'] : [];
-  if (res === 'win') showMsg(next === 'champ' ? '¡CAMPEÓN!' : '¡VICTORIA!', [line, ...outGroup, '+' + pts.toLocaleString('es-ES')], 'goal');
+  if (res === 'win') showMsg(next === 'champ' ? '¡CAMPEÓN!' : '¡VICTORIA!', [line, ...outGroup, ...gifts.map(g => 'REGALO: ' + g), '+' + pts.toLocaleString('es-ES')], 'goal');
   else if (res === 'draw') showMsg('EMPATE', [line, '+1 PUNTO DE GRUPO', ...outGroup], 'info');
   else showMsg('DERROTA', [line, ...outGroup], 'fail');
   if (res === 'win') { sRoar(); confetti(); } else sOoh();
@@ -1513,15 +1578,16 @@ function endMatch(res) {
   clearTimeout(cupTimer);
   cupTimer = setTimeout(() => {
     if (RUN !== run) return;
-    if (next === 'cup') { RUN.idx++; showCup(); } else runOver(next);
+    if (next === 'cup') { RUN.idx++; showPick(); } else runOver(next);
   }, 2300);
 }
 function runOver(kind) {
   state = 'runover';
+  const bonus = RUN.coins * 10; score += bonus;
   const rec = score > cupBest && score > 0;
   if (rec) { cupBest = score; try { localStorage.setItem('golazo-cup-best', String(cupBest)); } catch (e) { } }
   $('roTitle').textContent = kind === 'champ' ? '¡CAMPEÓN!' : 'ELIMINADO';
-  $('roSub').textContent = kind === 'champ' ? 'HAS GANADO EL TORNEO' : 'CAÍSTE EN ' + CUP_OUT[RUN.idx];
+  $('roSub').textContent = (kind === 'champ' ? 'HAS GANADO EL TORNEO' : 'CAÍSTE EN ' + CUP_OUT[RUN.idx]) + (bonus ? ' · MONEDAS +' + bonus.toLocaleString('es-ES') : '');
   $('roRec').hidden = !rec;
   $('roScore').textContent = score.toLocaleString('es-ES');
   $('roGoals').textContent = goals; $('roStreak').textContent = bestStreak; $('roBest').textContent = cupBest.toLocaleString('es-ES');
@@ -1530,9 +1596,141 @@ function runOver(kind) {
   showScreen('runOver'); updateHUD();
   keepAwake(false);
 }
+/* ---------------- cup upgrades, coins and cards ---------------- */
+// rarity 0 common, 1 rare, 2 legendary. Commons marked stack can be taken up to 3 times.
+const UPGRADES = [
+  { id: 'rosca', fam: 'BALÓN', rar: 0, stack: true, name: 'BOTA DE ROSCA', desc: '+25 % de efecto en el balón', fx: f => { f.magnus += 0.25; } },
+  { id: 'loca', fam: 'BALÓN', rar: 0, name: 'BALA LOCA', desc: 'Los tiros sin rosca bailan antes y más', fx: f => { f.knuckle = 1.6; } },
+  { id: 'fuego', fam: 'BALÓN', rar: 1, name: 'BALÓN DE FUEGO', desc: 'A más de 30 m/s atraviesa la barrera', fx: f => { f.fire = true; } },
+  { id: 'tele', fam: 'BALÓN', rar: 2, name: 'TELEDIRIGIDO', desc: 'En los últimos metros el balón busca la escuadra', fx: f => { f.steer = true; } },
+  { id: 'pierna', fam: 'TIRADOR', rar: 0, stack: true, name: 'PIERNA DE HIERRO', desc: '+8 % de potencia', fx: f => { f.power += 0.08; } },
+  { id: 'extra', fam: 'TIRADOR', rar: 0, stack: true, name: 'PASE EXTRA', desc: '+1 tiro en cada partido', fx: f => { f.shots += 1; } },
+  { id: 'diana', fam: 'TIRADOR', rar: 1, name: 'FRANCOTIRADOR', desc: 'La diana dorada sale en todos los tiros', fx: f => { f.target = true; } },
+  { id: 'frio', fam: 'TIRADOR', rar: 1, name: 'SANGRE FRÍA', desc: 'El rival falla más penaltis', fx: f => { f.penRival -= 0.2; } },
+  { id: 'escuadra', fam: 'MULTIPLICADOR', rar: 0, name: 'ESPECIALISTA', desc: 'La escuadra vale el triple', fx: f => { f.escuadra = 3; } },
+  { id: 'colec', fam: 'MULTIPLICADOR', rar: 0, stack: true, name: 'COLECCIONISTA', desc: '+30 % de monedas por gol', fx: f => { f.coins += 0.3; } },
+  { id: 'racha', fam: 'MULTIPLICADOR', rar: 1, name: 'RACHA CALIENTE', desc: 'Empiezas cada partido con racha x2', fx: f => { f.hot = true; } },
+  { id: 'artista', fam: 'MULTIPLICADOR', rar: 2, name: 'ARTISTA', desc: 'Cada bonus del gol suma +1 al multiplicador', fx: f => { f.artist = true; } },
+  { id: 'dormido', fam: 'SABOTAJE', rar: 0, stack: true, name: 'PORTERO DORMIDO', desc: 'El portero reacciona 0,08 s más tarde', fx: f => { f.tau += 0.08; } },
+  { id: 'bajita', fam: 'SABOTAJE', rar: 0, stack: true, name: 'BARRERA BAJITA', desc: 'Un jugador menos en la barrera', fx: f => { f.wallLess += 1; } },
+  { id: 'mantequilla', fam: 'SABOTAJE', rar: 1, name: 'GUANTES DE MANTEQUILLA', desc: 'El portero bloca peor: más rechaces', fx: f => { f.catchV *= 0.75; } },
+  { id: 'calma', fam: 'SABOTAJE', rar: 1, name: 'CALMA CHICHA', desc: 'Sin viento en ningún tiro', fx: f => { f.calm = true; } }
+];
+const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
+const RARITY = ['COMÚN', 'RARA', 'LEGENDARIA'], PRICE = [30, 60, 100], REROLL = 15, MAX_STACK = 3;
+const freshNext = () => ({ shots: 0, storm: false, reward: false, clean: false, label: '' });
+const EVENTS = [
+  { id: 'charla', name: 'CHARLA DEL MÍSTER', desc: '+1 tiro en el próximo partido', apply: R => { R.next.shots += 1; R.next.label = '+1 TIRO'; } },
+  { id: 'prima', name: 'PRIMA DE LA DIRECTIVA', desc: '+40 monedas ahora', apply: R => { R.coins += 40; } },
+  { id: 'arbitro', name: 'ÁRBITRO CASERO', desc: 'Un tiro menos en el próximo partido. Si lo ganas, mejora rara gratis', apply: R => { R.next.shots -= 1; R.next.reward = true; R.next.label = 'UN TIRO MENOS · SI GANAS, MEJORA RARA'; } },
+  { id: 'hinchada', name: 'HINCHADA EN CONTRA', desc: 'Viento fuerte en el próximo partido. +60 monedas ahora', apply: R => { R.next.storm = true; R.coins += 60; R.next.label = 'VIENTO FUERTE'; } },
+  { id: 'apuesta', name: 'LA APUESTA', desc: 'Gana el próximo partido sin fallar ni un tiro y llévate una legendaria', apply: R => { R.next.clean = true; R.next.label = 'SIN FALLAR: LEGENDARIA'; } },
+  { id: 'rotaciones', name: 'ROTACIONES', desc: 'Pierdes una mejora al azar y ganas dos comunes', need: R => R.ups.length > 0, apply: (R, rng) => {
+    R.ups.splice((rng() * R.ups.length) | 0, 1);
+    for (let k = 0; k < 2; k++) { const u = rollUpgrades(rng, 1, [1, 0, 0])[0]; if (u) R.ups.push(u.id); }
+  } }
+];
+function recalcFx() {
+  if (!RUN) { FX = NOFX; return; }
+  const f = Object.assign({}, NOFX);
+  for (const id of RUN.ups) UPG[id].fx(f);
+  FX = f;
+}
+const owned = id => RUN.ups.filter(u => u === id).length;
+const available = u => u.stack ? owned(u.id) < MAX_STACK : owned(u.id) === 0;
+// k distinct upgrades; weights = chance of each rarity
+function rollUpgrades(rng, k, weights) {
+  const out = [];
+  for (let tries = 0; out.length < k && tries < 60; tries++) {
+    let x = rng() * (weights[0] + weights[1] + weights[2]), rar = 0;
+    while (rar < 2 && x >= weights[rar]) { x -= weights[rar]; rar++; }
+    const pool = UPGRADES.filter(u => u.rar === rar && available(u) && !out.includes(u));
+    if (pool.length) out.push(pool[(rng() * pool.length) | 0]);
+  }
+  return out;
+}
+function giftUpgrade(rar) {
+  const rng = mulberry32(seedFor(RUN.seed, 8000 + RUN.idx));
+  const u = rollUpgrades(rng, 1, rar === 2 ? [0, 0, 1] : [0, 1, 0])[0];
+  if (!u) { RUN.coins += 100; return '+100 MONEDAS'; }
+  RUN.ups.push(u.id); recalcFx(); return u.name;
+}
+const pickRng = () => mulberry32(seedFor(RUN.seed, 9000 + RUN.idx * 16 + RUN.rolls));
+function showPick() {
+  state = 'pick'; RUN.match = null; RUN.rolls = 0;
+  const rng = pickRng();
+  // three cards, never all of the same kind
+  let kinds = [0, 1, 2].map(() => ['train', 'shop', 'event'][(rng() * 3) | 0]);
+  if (kinds[0] === kinds[1] && kinds[1] === kinds[2]) kinds[2] = kinds[0] === 'event' ? 'train' : 'event';
+  const evs = EVENTS.filter(e => !e.need || e.need(RUN)), used = [];
+  RUN.offer = kinds.map(k => {
+    if (k !== 'event') return { k };
+    let e; do { e = evs[(rng() * evs.length) | 0]; } while (used.includes(e) && used.length < evs.length);
+    used.push(e); return { k, e };
+  });
+  renderPickCards();
+  showScreen('pick'); updateHUD();
+}
+function pickCard(o, opts) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'card ' + (opts.cls || '');
+  const add = (cls, t) => { const sp = document.createElement('span'); sp.className = cls; sp.textContent = t; b.appendChild(sp); return sp; };
+  add('t', opts.tag); add('n', opts.name); add('d', opts.desc);
+  if (opts.price != null) { const p = add('p', ''); const c = document.createElement('i'); c.className = 'coin'; p.append(c, String(opts.price)); }
+  b.disabled = !!opts.disabled;
+  b.addEventListener('click', e => { e.stopPropagation(); opts.go(); });
+  return b;
+}
+function pickHeader(title, sub) {
+  $('pickTitle').textContent = title;
+  $('pickSub').textContent = sub;
+  $('pickCards').innerHTML = ''; $('pickRow').innerHTML = '';
+}
+const coinsTxt = () => 'MONEDAS ' + RUN.coins;
+function renderPickCards() {
+  pickHeader('ELIGE UNA CARTA', coinsTxt() + ' · ANTES DE ' + RUN.bracket[RUN.idx].short);
+  for (const o of RUN.offer) {
+    const c = o.k === 'train' ? { cls: 'k-train', tag: 'ENTRENAMIENTO', name: 'ENTRENAMIENTO', desc: 'Elige 1 de 3 mejoras gratis', go: openTrain }
+      : o.k === 'shop' ? { cls: 'k-shop', tag: 'TIENDA', name: 'TIENDA', desc: 'Compra mejoras con tus monedas (tienes ' + RUN.coins + ')', go: openShop }
+      : { cls: 'k-event', tag: 'EVENTO', name: o.e.name, desc: o.e.desc, go: () => { o.e.apply(RUN, pickRng()); recalcFx(); finishPick(); } };
+    $('pickCards').appendChild(pickCard(o, c));
+  }
+}
+function upCard(u, extra) {
+  const n = owned(u.id);
+  return Object.assign({ cls: 'r' + u.rar + (n ? ' own' : ''), tag: u.fam + ' · ' + RARITY[u.rar] + (n ? ' · TIENES ' + n : ''), name: u.name, desc: u.desc }, extra);
+}
+function openTrain() {
+  pickHeader('ENTRENAMIENTO', 'ELIGE UNA MEJORA GRATIS');
+  const ups = rollUpgrades(mulberry32(seedFor(RUN.seed, 9500 + RUN.idx)), 3, [70, 25, 5]);
+  for (const u of ups) $('pickCards').appendChild(pickCard(u, upCard(u, { go: () => { RUN.ups.push(u.id); recalcFx(); finishPick(); } })));
+  if (!ups.length) finishPick();
+}
+function openShop() {
+  const items = rollUpgrades(mulberry32(seedFor(RUN.seed, 9200 + RUN.idx * 16 + RUN.rolls)), 3, [55, 35, 10]).map(u => Object.assign({}, u));
+  const render = () => {
+    pickHeader('TIENDA', coinsTxt());
+    for (const it of items) {
+      const price = PRICE[it.rar], sold = it.sold;
+      $('pickCards').appendChild(pickCard(it, upCard(it, {
+        price: sold ? null : price, disabled: sold || RUN.coins < price || !available(it),
+        desc: sold ? 'COMPRADA' : it.desc,
+        go: () => { RUN.coins -= price; RUN.ups.push(it.id); it.sold = true; recalcFx(); render(); }
+      })));
+    }
+    const rr = document.createElement('button'); rr.type = 'button'; rr.className = 'chip'; rr.textContent = 'OTRAS (' + REROLL + ')';
+    rr.disabled = RUN.coins < REROLL;
+    rr.addEventListener('click', e => { e.stopPropagation(); RUN.coins -= REROLL; RUN.rolls++; openShop(); });
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'btn sm'; go.textContent = 'SEGUIR';
+    go.addEventListener('click', e => { e.stopPropagation(); finishPick(); });
+    $('pickRow').append(rr, go);
+    updateHUD();
+  };
+  render();
+}
+function finishPick() { RUN.offer = null; showCup(); }
 function toMenu() {
   clearTimeout(cupTimer);
-  RUN = null; state = 'title'; keepAwake(false);
+  RUN = null; FX = NOFX; state = 'title'; keepAwake(false);
   showScreen('title'); updateHUD();
 }
 
@@ -1544,13 +1742,14 @@ function updateHUD(goal) {
   if (streak > 0) { m.className = ''; m.textContent = 'RACHA x' + Math.min(streak, 10); if (goal && streak !== lastMult) { void m.offsetWidth; m.className = 'bump'; } }
   else { m.className = 'off'; m.textContent = 'RACHA 0'; }
   lastMult = streak;
-  const box = $('balls'), rm = RUN && RUN.match, nb = rm ? (rm.pens ? 0 : Math.max(CUP_SHOTS, lives)) : 3;
+  const box = $('balls'), rm = RUN && RUN.match, nb = rm ? (rm.pens ? 0 : Math.max(rm.shots0 || CUP_SHOTS, lives)) : 3;
   while (box.children.length < nb) { const b = document.createElement('i'); b.className = 'b'; box.appendChild(b); }
   while (box.children.length > nb) box.lastChild.remove();
   const bs = box.children;
   for (let i = 0; i < nb; i++) { bs[i].className = 'b' + (i < lives ? '' : ' lost') + (gainBall && i === lives - 1 ? ' gain' : ''); }
   gainBall = false;
   const ms = $('mscore'); ms.hidden = !rm;
+  $('coins').hidden = !rm; if (RUN) $('coinN').textContent = RUN.coins;
   if (rm) ms.textContent = rm.pens ? penLine() : rm.r.name.slice(0, 3) + ' ' + rm.r.target + ' · TÚ ' + rm.mine;
   $('best').textContent = 'MEJOR ' + Math.max(RUN ? cupBest : best, score).toLocaleString('es-ES');
   $('tbest').textContent = 'RÉCORD ' + best.toLocaleString('es-ES') + (cupBest > 0 ? ' · TORNEO ' + cupBest.toLocaleString('es-ES') : '');
@@ -2082,7 +2281,8 @@ function drawParticles() {
 function drawTrail() {
   for (let i = 0; i < trail.length; i++) {
     const p = trail[i]; if (!proj(p[0], p[1], p[2], PP)) continue;
-    const a = (i / trail.length) * 0.5; blendp(PP.x, PP.y, 255, 246, 220, a);
+    const a = (i / trail.length) * 0.5;
+    if (FX.fire && flight && flight.v0 >= 30) blendp(PP.x, PP.y, 255, 120 + i * 6, 40, a + 0.3); else blendp(PP.x, PP.y, 255, 246, 220, a);
   }
 }
 function drawSwipe() {
@@ -2247,7 +2447,7 @@ function update(dtReal) {
   net.vel += (-90 * net.amp - 7 * net.vel) * sdt; net.amp += net.vel * sdt;
   // camera
   const e = k => 1 - Math.exp(-k * dtReal);
-  if (state === 'title' || state === 'over' || state === 'cup' || state === 'cupwait' || state === 'runover' || state === 'penwait') {
+  if (state === 'title' || state === 'over' || state === 'cup' || state === 'cupwait' || state === 'runover' || state === 'penwait' || state === 'pick') {
     const sw = Math.sin(realT * 0.25) * 0.18;
     cam.x = lerp(cam.x, camBase.x + Math.sin(realT * 0.2) * 1.5, e(1)); cam.z = lerp(cam.z, camBase.z, e(1)); cam.y = lerp(cam.y, camBase.y, e(1)); cam.yaw = lerp(cam.yaw, camBase.yaw + sw, e(1));
   } else if (state === 'trans') {
@@ -2393,7 +2593,7 @@ let nameReturn = 'title';
 const fmt = n => Number(n || 0).toLocaleString('es-ES');
 const isPlayer = () => !!(player && player.id && player.token);
 
-function showScreen(id) { for (const s of ['nameScr', 'title', 'over', 'board', 'cup', 'runOver']) $(s).hidden = s !== id; }
+function showScreen(id) { for (const s of ['nameScr', 'title', 'over', 'board', 'cup', 'pick', 'runOver']) $(s).hidden = s !== id; }
 function syncPlayerUI() {
   const chip = $('tPlayer');
   chip.hidden = $('tBoard').hidden = !NET.enabled;
@@ -2732,7 +2932,7 @@ else { flushPending(); if (params.has('ranking') && NET.enabled) openBoard('titl
 if (params.has('ranking') || params.has('source')) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
 if (DEBUG) Object.defineProperties(window.__golazo, Object.getOwnPropertyDescriptors({ setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; }, over: () => { lives = 0; gameOver(); },
-  run: () => RUN, startRun, startMatch, kickInfo: () => ({ kind: kick.kind, spot: { ...spot }, wall: wall.length, wind: Math.hypot(wind.x, wind.z), keeper: K.type && K.type.name }),
+  run: () => RUN, startRun, startMatch, fx: () => FX, give: id => { RUN.ups.push(id); recalcFx(); }, kickInfo: () => ({ kind: kick.kind, spot: { ...spot }, wall: wall.length, wind: Math.hypot(wind.x, wind.z), keeper: K.type && K.type.name }),
   // fake the outcome of the current shot (testing the cup flow without aiming)
   fake: goal => { if (state !== 'aim' && state !== 'trans') return false; rec.length = 0; flight = { dist: 20, crossX: 0, crossY: 1, wy0: 0, v0: 25, kind: kick.kind }; if (goal) finishGoal(); else finishFail('FUERA'); return true; } }));
 })();
