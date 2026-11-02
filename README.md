@@ -50,10 +50,20 @@ La clave publishable es pública por diseño. Las tablas tienen Row Level Securi
 | `submit_score(p_player, p_token, p_score, p_goals, p_streak)` | Guarda una partida si el token es correcto y la puntuación es posible |
 | `get_leaderboard(p_period, p_limit)` | Mejor partida de cada jugador, `week` o `all` |
 | `get_player_standing(p_player, p_period)` | Posición de un jugador aunque no salga en el top |
+| `submit_rogue(...)` | Guarda un torneo terminado |
+| `daily_status(p_player)` / `start_daily(p_player, p_token)` | Estado del reto de hoy / gastar el único intento del día |
+| `save_daily(...)` | Guarda el progreso del reto mientras se juega y lo cierra al acabar |
+| `get_rogue_leaderboard(p_mode, p_limit)` / `get_rogue_standing(p_player, p_mode)` | Ranking del torneo (`week`, `all`) o del reto de hoy (`daily`) |
 
 Como el juego corre entero en el navegador, alguien con conocimientos podría enviar una puntuación inventada. El servidor rechaza las imposibles (más de ~28.000 puntos por gol, rachas mayores que los goles) y limita a una partida cada 5 segundos por jugador. Si alguien hace trampas, se puede borrar desde Supabase (**Table Editor → scores**).
 
 Sin `config.js` rellenado el juego funciona igual, sin nombres ni ranking.
+
+### Ranking del torneo y reto diario
+
+El torneo tiene su propio ranking (semana y siempre) y un **reto diario**: el mismo torneo para todos cada día (la semilla sale de la fecha, en hora de Madrid), un solo intento por jugador y con nombre obligatorio. El intento cuenta desde que empieza: el progreso se guarda después de cada partido y al salir de la app, así que cerrarla a mitad deja la puntuación que llevabas.
+
+Estas tablas y funciones están al final de [`supabase/schema.sql`](supabase/schema.sql). Si ya tenías el ranking montado, vuelve a pegar el archivo entero en el SQL Editor y pulsa **Run**: no toca los datos existentes. Mientras no lo ejecutes, el juego funciona igual: el botón del reto no aparece y los torneos se guardan en el dispositivo para enviarse cuando el ranking esté listo.
 
 ## Publicar en GitHub Pages
 

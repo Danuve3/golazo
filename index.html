@@ -208,6 +208,14 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
 .card.r2{box-shadow:inset 4px 0 0 var(--gold),3px 3px 0 var(--ink),0 0 0 2px rgba(255,200,74,.35)}
 .card.r2 .n{color:var(--gold)}
 .card.own{background:rgba(124,240,200,.16)}
+.btn.alt2{background:var(--coral);color:var(--cream);box-shadow:3px 3px 0 var(--plum),6px 6px 0 var(--ink);text-shadow:2px 2px 0 var(--ink)}
+.btn.alt2:active{box-shadow:1px 1px 0 var(--plum),3px 3px 0 var(--ink)}
+.tbtns{gap:14px}
+#tMsg{max-width:30ch;line-height:1.4;margin-top:-6px}
+#board .tabs+.tabs{margin-top:-8px}
+/* short phones: the title screen holds three mode buttons */
+@media (max-height:860px){#title{gap:12px}#title .logo .a{font-size:clamp(46px,15vw,70px)}#title .logo .z{margin-top:10px}#title .how{gap:5px;font-size:11px}#title .how b{width:19px;height:19px}.tbtns{gap:12px}.tbtns .btn{font-size:21px;padding:8px 22px 10px}.tbtns .btn.sm{font-size:16px}}
+@media (max-height:760px){#title .how{display:none}}
 .screen.form{cursor:default;touch-action:auto;overflow-y:auto;background:linear-gradient(to bottom,rgba(5,4,15,.93),rgba(5,4,15,.88) 60%,rgba(5,4,15,.95));justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
 .logo.sm .a{font-size:clamp(44px,14vw,66px)}
 .logo.sm .z{font-size:clamp(15px,4.8vw,22px);margin-top:10px}
@@ -321,7 +329,9 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
       <div class="tbtns">
         <button class="btn" id="tInf" type="button">INFINITO</button>
         <button class="btn alt" id="tCup" type="button">TORNEO<span class="nw">NUEVO</span></button>
+        <button class="btn sm alt2" id="tDaily" type="button" hidden>RETO DIARIO</button>
       </div>
+      <div class="small" id="tMsg" hidden></div>
       <div class="small" id="tbest">RÉCORD 0</div>
       <div class="trow">
         <button class="chip" id="tPlayer" type="button" hidden>INVITADO</button>
@@ -376,9 +386,12 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
         <span class="k">GOLES</span><span class="k">RACHA</span><span class="k">RÉCORD</span>
         <span class="v" id="roGoals">0</span><span class="v" id="roStreak">0</span><span class="v" id="roBest">0</span>
       </div>
+      <div class="onet" id="roNet" aria-live="polite"></div>
       <div class="brow">
         <button class="btn" id="roAgain" type="button">OTRO TORNEO</button>
+        <button class="chip gold" id="roBoard" type="button" hidden>RANKING</button>
       </div>
+      <button class="chip mint" id="roShare" type="button" hidden>COMPARTIR RESULTADO</button>
       <button class="chip mint" id="roClip" type="button" hidden>COMPARTIR MI MEJOR GOL</button>
       <button class="link" id="roMenu" type="button">MENÚ</button>
     </div>
@@ -419,7 +432,12 @@ body{background:var(--night);color:var(--cream);overflow:hidden;overscroll-behav
     </div>
     <div id="board" class="screen form" hidden role="dialog" aria-labelledby="bTitle">
       <div class="ttl" id="bTitle">RANKING</div>
-      <div class="tabs" role="tablist">
+      <div class="tabs" role="tablist" id="bModes">
+        <button type="button" role="tab" data-m="inf" aria-selected="true">INFINITO</button>
+        <button type="button" role="tab" data-m="cup" aria-selected="false">TORNEO</button>
+        <button type="button" role="tab" data-m="daily" aria-selected="false">RETO</button>
+      </div>
+      <div class="tabs" role="tablist" id="bPeriods">
         <button type="button" role="tab" data-p="week" aria-selected="true">SEMANA</button>
         <button type="button" role="tab" data-p="all" aria-selected="false">SIEMPRE</button>
       </div>
@@ -1504,6 +1522,8 @@ function showCup() {
     add('rs', res ? c.target + ' - ' + res.mine + (res.pen ? ' (' + res.pen + ')' : '') + ({ W: ' ✓', D: ' =', L: ' ✗' })[res.res] : 'MARCA ' + (c.target + 1));
     list.appendChild(li);
   });
+  $('cupTitle').textContent = RUN.daily ? 'RETO DEL ' + dayTxt(RUN.daily.day) : 'TORNEO';
+  $('cupQuit').textContent = RUN.daily ? 'ABANDONAR (CUENTA COMO JUGADO)' : 'ABANDONAR TORNEO';
   showScreen('cup'); updateHUD();
 }
 function startMatch() {
@@ -1582,7 +1602,7 @@ function endMatch(res) {
   }, 2300);
 }
 function runOver(kind) {
-  state = 'runover';
+  state = 'runover'; RUN.champ = kind === 'champ';
   const bonus = RUN.coins * 10; score += bonus;
   const rec = score > cupBest && score > 0;
   if (rec) { cupBest = score; try { localStorage.setItem('golazo-cup-best', String(cupBest)); } catch (e) { } }
@@ -1595,6 +1615,7 @@ function runOver(kind) {
   RUN.match = null;
   showScreen('runOver'); updateHUD();
   keepAwake(false);
+  cupResultNet(kind);
 }
 /* ---------------- cup upgrades, coins and cards ---------------- */
 // rarity 0 common, 1 rare, 2 legendary. Commons marked stack can be taken up to 3 times.
@@ -1658,6 +1679,7 @@ function giftUpgrade(rar) {
 const pickRng = () => mulberry32(seedFor(RUN.seed, 9000 + RUN.idx * 16 + RUN.rolls));
 function showPick() {
   state = 'pick'; RUN.match = null; RUN.rolls = 0;
+  saveDailyNow(false).catch(() => { });
   const rng = pickRng();
   // three cards, never all of the same kind
   let kinds = [0, 1, 2].map(() => ['train', 'shop', 'event'][(rng() * 3) | 0]);
@@ -1730,8 +1752,9 @@ function openShop() {
 function finishPick() { RUN.offer = null; showCup(); }
 function toMenu() {
   clearTimeout(cupTimer);
+  if (RUN && RUN.daily && !RUN.daily.done) saveDailyNow(true).catch(() => { });
   RUN = null; FX = NOFX; state = 'title'; keepAwake(false);
-  showScreen('title'); updateHUD();
+  showScreen('title'); updateHUD(); tMsg(''); setDailyBtn();
 }
 
 /* ---------------- HUD ---------------- */
@@ -2542,8 +2565,8 @@ $('cback').addEventListener('click', e => { e.stopPropagation(); closeContact();
 $('contact').addEventListener('pointerdown', e => e.stopPropagation());
 document.querySelectorAll('.modes button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMode(b.dataset.mode); }));
 $('modeBtn').addEventListener('click', e => { e.stopPropagation(); setMode(mode === 'swipe' ? 'sling' : 'swipe'); });
-$('tInf').addEventListener('click', e => { e.stopPropagation(); startGame(); });
-$('tCup').addEventListener('click', e => { e.stopPropagation(); startRun(); });
+$('tInf').addEventListener('click', e => { e.stopPropagation(); if (!daily.busy) startGame(); });
+$('tCup').addEventListener('click', e => { e.stopPropagation(); if (!daily.busy) { tMsg(''); startRun(); } });
 $('again').addEventListener('click', e => { e.stopPropagation(); startGame(); });
 $('oMenu').addEventListener('click', e => { e.stopPropagation(); toMenu(); });
 $('cupGo').addEventListener('click', e => { e.stopPropagation(); if (RUN && state === 'cup') startMatch(); });
@@ -2570,19 +2593,21 @@ const NET = (() => {
   const cfg = window.GOLAZO_CONFIG || {};
   const url = String(cfg.supabaseUrl || '').trim().replace(/\/+$/, ''), key = String(cfg.supabaseAnonKey || '').trim();
   const enabled = (/^https:\/\//.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(url)) && key.length > 20;
-  async function rpc(fn, args) {
+  async function rpc(fn, args, opts) {
     const headers = { 'Content-Type': 'application/json', apikey: key };
     if (!key.startsWith('sb_')) headers.Authorization = 'Bearer ' + key;   // legacy anon JWT keys
     let r;
-    try { r = await fetch(url + '/rest/v1/rpc/' + fn, { method: 'POST', headers, body: JSON.stringify(args || {}) }); }
+    try { r = await fetch(url + '/rest/v1/rpc/' + fn, { method: 'POST', headers, body: JSON.stringify(args || {}), keepalive: !!(opts && opts.keepalive) }); }
     catch (e) { const err = new Error('network'); err.code = 'network'; throw err; }
     const txt = await r.text(); let data = null;
     try { data = txt ? JSON.parse(txt) : null; } catch (e) { }
-    if (!r.ok) { const err = new Error((data && data.message) || ('http_' + r.status)); err.code = (data && data.message) || 'http'; throw err; }
+    if (!r.ok) { const err = new Error((data && data.message) || ('http_' + r.status)); err.code = (data && data.message) || 'http'; err.status = r.status; throw err; }
     return data;
   }
   return { enabled, rpc };
 })();
+// the cup/daily SQL may not be installed yet: PostgREST answers 404 for a missing function
+const missingFn = e => !!e && (e.status === 404 || /could not find the function/i.test(e.message || ''));
 const LS = {
   get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
   set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
@@ -2617,6 +2642,7 @@ function closeName() {
   if (nameReturn === 'over') { showScreen('over'); renderOverNet(); }
   else { showScreen('title'); }
   syncPlayerUI();
+  if (nameReturn === 'daily' && isPlayer()) startDaily(); else refreshDaily();
 }
 $('nameInput').addEventListener('input', () => {
   const v = $('nameInput').value.trim(); nameOK = false; clearTimeout(nameTimer); const seq = ++nameSeq;
@@ -2706,20 +2732,29 @@ async function flushPending() {
 
 /* leaderboard */
 let boardPeriod = LS.get('golazo-board') === 'all' ? 'all' : 'week', boardReturn = 'title', boardSeq = 0;
-function openBoard(from) {
+let boardMode = ['inf', 'cup', 'daily'].includes(LS.get('golazo-board-mode')) ? LS.get('golazo-board-mode') : 'inf';
+const STAGE_TXT = ['GRUPOS', 'GRUPOS', 'GRUPOS', 'CUARTOS', 'SEMIS', 'FINAL', 'CAMPEÓN'];
+function openBoard(from, mode) {
+  if (mode) boardMode = mode;
   boardReturn = from; showScreen('board'); loadBoard();
 }
 async function loadBoard() {
   const seq = ++boardSeq, list = $('bList'), state = $('bState'), me = $('bMe');
-  document.querySelectorAll('#board .tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.p === boardPeriod ? 'true' : 'false'));
+  document.querySelectorAll('#bPeriods button').forEach(b => b.setAttribute('aria-selected', b.dataset.p === boardPeriod ? 'true' : 'false'));
+  document.querySelectorAll('#bModes button').forEach(b => b.setAttribute('aria-selected', b.dataset.m === boardMode ? 'true' : 'false'));
+  $('bPeriods').hidden = boardMode === 'daily';
   list.innerHTML = ''; me.hidden = true; state.hidden = false; state.textContent = 'Cargando…';
+  const cupMode = boardMode === 'daily' ? 'daily' : boardPeriod;
   try {
-    const [rows, standing] = await Promise.all([
+    const [rows, standing] = await Promise.all(boardMode === 'inf' ? [
       NET.rpc('get_leaderboard', { p_period: boardPeriod, p_limit: 50 }),
       isPlayer() ? NET.rpc('get_player_standing', { p_player: player.id, p_period: boardPeriod }).catch(() => null) : Promise.resolve(null)
+    ] : [
+      NET.rpc('get_rogue_leaderboard', { p_mode: cupMode, p_limit: 50 }),
+      isPlayer() ? NET.rpc('get_rogue_standing', { p_player: player.id, p_mode: cupMode }).catch(() => null) : Promise.resolve(null)
     ]);
     if (seq !== boardSeq) return;
-    if (!rows || !rows.length) { state.textContent = boardPeriod === 'week' ? 'Nadie ha jugado esta semana. ¡Estrena el ranking!' : 'Todavía no hay récords. ¡Sé el primero!'; return; }
+    if (!rows || !rows.length) { state.textContent = boardMode === 'daily' ? 'Nadie ha jugado el reto de hoy. ¡Estrénalo!' : boardPeriod === 'week' ? 'Nadie ha jugado esta semana. ¡Estrena el ranking!' : 'Todavía no hay récords. ¡Sé el primero!'; return; }
     state.hidden = true;
     let meShown = false;
     for (const r of rows) {
@@ -2727,22 +2762,126 @@ async function loadBoard() {
       if (r.rank <= 3) li.className = 'p' + r.rank;
       if (isPlayer() && r.name.toLowerCase() === player.name.toLowerCase()) { li.classList.add('me'); meShown = true; }
       const c = (cls, t) => { const s = document.createElement('span'); s.className = cls; s.textContent = t; li.appendChild(s); };
-      c('r', '#' + r.rank); c('n', r.name); c('g', r.goals + ' GOLES'); c('s', fmt(r.score));
+      c('r', '#' + r.rank); c('n', r.name); c('g', boardMode === 'inf' ? r.goals + ' GOLES' : STAGE_TXT[r.stage] || ''); c('s', fmt(r.score));
       list.appendChild(li);
     }
     if (isPlayer() && !meShown) {
       me.hidden = false;
-      me.textContent = standing ? 'Tu posición: #' + standing.rank + ' · ' + fmt(standing.score) : (boardPeriod === 'week' ? 'Esta semana aún no tienes puntuación' : 'Aún no tienes puntuación');
+      me.textContent = standing ? 'Tu posición: #' + standing.rank + ' · ' + fmt(standing.score) : (boardMode === 'daily' ? 'Hoy aún no has jugado el reto' : boardPeriod === 'week' ? 'Esta semana aún no tienes puntuación' : 'Aún no tienes puntuación');
     }
   } catch (e) {
     if (seq !== boardSeq) return;
-    state.textContent = 'No se pudo cargar el ranking. Revisa tu conexión.';
+    state.textContent = boardMode !== 'inf' && missingFn(e) ? 'El ranking del torneo estará disponible muy pronto.' : 'No se pudo cargar el ranking. Revisa tu conexión.';
   }
 }
-document.querySelectorAll('#board .tabs button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); boardPeriod = b.dataset.p; LS.set('golazo-board', boardPeriod); loadBoard(); }));
+document.querySelectorAll('#bPeriods button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); boardPeriod = b.dataset.p; LS.set('golazo-board', boardPeriod); loadBoard(); }));
+document.querySelectorAll('#bModes button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); boardMode = b.dataset.m; LS.set('golazo-board-mode', boardMode); loadBoard(); }));
 $('bClose').addEventListener('click', e => { e.stopPropagation(); showScreen(boardReturn); });
 $('tBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('title'); });
-$('oBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('over'); });
+$('oBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('over', 'inf'); });
+$('roBoard').addEventListener('click', e => { e.stopPropagation(); openBoard('runOver', lastCup && lastCup.daily ? 'daily' : 'cup'); });
+
+/* cup ranking and daily challenge */
+// everyone plays the same cup on the same day: the seed comes from the date the server gives
+const daySeed = day => { let h = 2166136261; for (const ch of 'golazo-reto-' + day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const dayTxt = day => { const [, m, d] = String(day).split('-').map(Number); return d + ' ' + ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][m - 1]; };
+const retryable = e => e.code === 'network' || e.code === 'http' || e.code === 'too_fast';
+let daily = { ok: true, played: false, day: null, busy: false };
+let lastCup = null;
+function setDailyBtn() {
+  const b = $('tDaily');
+  b.hidden = !NET.enabled || !daily.ok;
+  b.textContent = daily.played ? 'RETO DE HOY · RANKING' : 'RETO DIARIO';
+}
+async function refreshDaily() {
+  setDailyBtn();
+  if (!NET.enabled || !daily.ok || !isPlayer()) return;
+  try { const st = await NET.rpc('daily_status', { p_player: player.id }); daily.played = !!(st && st.played); daily.day = st && st.day; }
+  catch (e) { if (missingFn(e)) daily.ok = false; }
+  setDailyBtn();
+}
+function tMsg(t) { const m = $('tMsg'); m.hidden = !t; m.textContent = t || ''; }
+async function startDaily() {
+  if (daily.busy) return;
+  if (daily.played) { openBoard('title', 'daily'); return; }
+  if (!isPlayer()) { openName('daily'); return; }
+  daily.busy = true; tMsg('Preparando el reto de hoy…');
+  try {
+    const r = await NET.rpc('start_daily', { p_player: player.id, p_token: player.token });
+    tMsg(''); daily.played = true; daily.day = r.day; setDailyBtn();
+    startRun(daySeed(r.day));
+    RUN.daily = { runId: r.run_id, day: r.day, done: false };
+    showCup();
+  } catch (e) {
+    if (e.code === 'already_played') { daily.played = true; setDailyBtn(); tMsg('Ya has jugado el reto de hoy. Vuelve mañana.'); }
+    else if (e.code === 'bad_token') { player = null; LS.set('golazo-player', null); syncPlayerUI(); tMsg('Tu nombre ya no es válido en este dispositivo. Crea uno nuevo.'); }
+    else if (missingFn(e)) { daily.ok = false; setDailyBtn(); tMsg('El reto diario aún no está disponible.'); }
+    else tMsg('Necesitas conexión para jugar el reto diario.');
+  } finally { daily.busy = false; }
+}
+const runStage = () => RUN.champ ? 6 : RUN.idx;
+// the daily run is saved as it goes (one try only: closing the app keeps what you had)
+function saveDailyNow(final, keepalive) {
+  if (!RUN || !RUN.daily || RUN.daily.done || !isPlayer()) return Promise.resolve(null);
+  if (final) RUN.daily.done = true;
+  const args = { p_player: player.id, p_token: player.token, p_run: RUN.daily.runId, p_score: score, p_goals: goals, p_streak: bestStreak, p_stage: runStage(), p_final: !!final };
+  return NET.rpc('save_daily', args, { keepalive: !!keepalive }).catch(e => {
+    if (final && retryable(e)) LS.set('golazo-daily-pending', args);
+    throw e;
+  });
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && RUN && RUN.daily && !RUN.daily.done) saveDailyNow(false, true).catch(() => { }); });
+async function sendRogue(g) {
+  const args = { p_player: player.id, p_token: player.token, p_score: g.score, p_goals: g.goals, p_streak: g.streak, p_stage: g.stage };
+  try { return await NET.rpc('submit_rogue', args); }
+  catch (e) {
+    if (retryable(e) || missingFn(e)) { const pend = LS.get('golazo-cup-pending'); if (!pend || pend.id !== player.id || pend.score < g.score) LS.set('golazo-cup-pending', Object.assign({ id: player.id }, g)); }
+    throw e;
+  }
+}
+async function flushCupPending() {
+  if (!isPlayer() || !NET.enabled) return;
+  const pend = LS.get('golazo-cup-pending');
+  if (pend && pend.id === player.id) {
+    try { await NET.rpc('submit_rogue', { p_player: player.id, p_token: player.token, p_score: pend.score, p_goals: pend.goals, p_streak: pend.streak, p_stage: pend.stage }); LS.set('golazo-cup-pending', null); }
+    catch (e) { if (e.code === 'bad_token' || e.code === 'bad_score') LS.set('golazo-cup-pending', null); }
+  }
+  const dp = LS.get('golazo-daily-pending');
+  if (dp && dp.p_player === player.id) {
+    try { await NET.rpc('save_daily', dp); LS.set('golazo-daily-pending', null); }
+    catch (e) { if (!retryable(e)) LS.set('golazo-daily-pending', null); }
+  }
+}
+// end-of-cup screen: save to the ranking and show the position
+function cupResultNet(kind) {
+  const box = $('roNet'), isDaily = !!RUN.daily, run = RUN;
+  box.className = 'onet'; box.textContent = '';
+  lastCup = { daily: isDaily, day: isDaily ? RUN.daily.day : null, res: RUN.res.slice(), champ: kind === 'champ', idx: RUN.idx, score };
+  $('roShare').hidden = !isDaily; $('roShare').textContent = 'COMPARTIR RESULTADO';
+  $('roBoard').hidden = !NET.enabled;
+  $('roAgain').textContent = isDaily ? 'JUGAR UN TORNEO' : 'OTRO TORNEO';
+  if (!NET.enabled) return;
+  if (!isPlayer()) { box.textContent = 'Como invitado, este torneo no entra en el ranking.'; return; }
+  box.textContent = 'Guardando en el ranking…';
+  const p = isDaily ? saveDailyNow(true) : sendRogue({ score, goals, streak: bestStreak, stage: runStage() });
+  p.then(r => {
+    if (RUN !== run || !r) return;
+    box.textContent = isDaily ? 'Puesto #' + r.rank + ' de ' + r.players + ' en el reto de hoy' : 'Puesto #' + r.week_rank + ' de la semana · #' + r.rank + ' de siempre';
+  }).catch(e => {
+    if (RUN !== run) return;
+    box.className = 'onet bad';
+    box.textContent = missingFn(e) ? 'El ranking del torneo llegará muy pronto: lo guardamos para enviarlo.' : retryable(e) ? 'Sin conexión: se enviará más tarde.' : 'No se pudo guardar en el ranking.';
+  });
+}
+$('roShare').addEventListener('click', async e => {
+  e.stopPropagation(); if (!lastCup || !lastCup.daily) return;
+  const sq = Array.from({ length: 6 }, (_, i) => ({ W: '🟩', D: '🟨', L: '🟥' })[(lastCup.res[i] || {}).res] || '⬛').join('');
+  const end = lastCup.champ ? '¡Campeón!' : 'Caí en ' + CUP_OUT[lastCup.idx].toLowerCase();
+  const text = 'Golazo · Reto del ' + dayTxt(lastCup.day).toLowerCase() + '\n' + sq + '\n' + end + ' · ' + fmt(lastCup.score) + ' puntos\n' + SHARE_URL;
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (err) { if (err && err.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); $('roShare').textContent = '¡COPIADO!'; setTimeout(() => { $('roShare').textContent = 'COMPARTIR RESULTADO'; }, 1600); } catch (err) { }
+});
+$('tDaily').addEventListener('click', e => { e.stopPropagation(); startDaily(); });
 
 /* ---------------- app shell: install, offline, native feel ---------------- */
 const STANDALONE = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
@@ -2928,11 +3067,12 @@ boot({});
 syncPlayerUI();
 const params = new URLSearchParams(location.search);
 if (NET.enabled && !player) openName('title');
-else { flushPending(); if (params.has('ranking') && NET.enabled) openBoard('title'); }
+else { flushPending(); flushCupPending(); if (params.has('ranking') && NET.enabled) openBoard('title'); }
+refreshDaily();
 if (params.has('ranking') || params.has('source')) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 if (DEBUG) window.__golazo = { finish: (sc, g, st) => { startGame(); score = sc; goals = g; bestStreak = st; lives = 0; gameOver(); } };
 if (DEBUG) Object.defineProperties(window.__golazo, Object.getOwnPropertyDescriptors({ setGoals: v => { goals = v; }, kick: () => kick, rec: () => rec, ball, K, flight: () => flight, shoot, newKick, startGame, stepBall, simStep, wall: () => wall, spot: () => spot, set state(v) { state = v; }, get state() { return state; }, over: () => { lives = 0; gameOver(); },
-  run: () => RUN, startRun, startMatch, fx: () => FX, give: id => { RUN.ups.push(id); recalcFx(); }, kickInfo: () => ({ kind: kick.kind, spot: { ...spot }, wall: wall.length, wind: Math.hypot(wind.x, wind.z), keeper: K.type && K.type.name }),
+  run: () => RUN, startRun, startMatch, startDaily, daySeed, daily: () => daily, fx: () => FX, give: id => { RUN.ups.push(id); recalcFx(); }, kickInfo: () => ({ kind: kick.kind, spot: { ...spot }, wall: wall.length, wind: Math.hypot(wind.x, wind.z), keeper: K.type && K.type.name }),
   // fake the outcome of the current shot (testing the cup flow without aiming)
   fake: goal => { if (state !== 'aim' && state !== 'trans') return false; rec.length = 0; flight = { dist: 20, crossX: 0, crossY: 1, wy0: 0, v0: 25, kind: kick.kind }; if (goal) finishGoal(); else finishFail('FUERA'); return true; } }));
 })();
